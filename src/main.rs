@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use convert_case::{ Case, Casing };
 
 mod nft;
-use nft::Nft;
+use nft::{ Nft, Summary, EquipItem, Character };
 
 const DATABASE_NAME: &str = "Mir4Scope";
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
@@ -87,6 +87,7 @@ async fn retrieve_and_save_nft(
                     bson::from_document::<Nft>(nft_document).unwrap(),
                     None
                 ).await?;
+                get_nft_summary(nft_collection.clone(), &character["seq"], client.clone()).await;
             }
         }
     }
@@ -94,6 +95,31 @@ async fn retrieve_and_save_nft(
     let mut file = File::create("output.json")?;
     let json_string = serde_json::to_string_pretty(&users["data"]["lists"])?;
     file.write_all(json_string.as_bytes())?;
+
+    Ok(())
+}
+
+async fn get_nft_summary(
+    nft_collection: Collection<Nft>,
+    seq: &serde_json::Value,
+    client: reqwest::Client
+) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    let request_url = format!(
+        "https://webapi.mir4global.com/nft/character/summary?seq={seq}&languageCode=en",
+        seq = seq
+    );
+
+    let response = client.get(request_url).send().await?;
+    let json: serde_json::Value = response.json().await?;
+    let data = &json["data"];
+
+    let summary_data: Summary = serde_json::from_value(data.clone()).unwrap();
+
+    let filter = doc! { "seq": bson::to_bson(seq).unwrap() };
+    let update =
+        doc! { "$set": { "trade_type": bson::to_bson(&data["tradeType"]).unwrap(), "world_name": bson::to_bson(&data["character"]["worldName"]).unwrap(), "equip_items": bson::to_bson(&data["equipItem"]).unwrap() } };
+
+    nft_collection.update_one(filter, update, None).await.unwrap();
 
     Ok(())
 }

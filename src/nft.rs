@@ -1,5 +1,6 @@
 use mongodb::{ bson::{ doc } };
 use serde::{ Deserialize, Serialize };
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -27,3 +28,37 @@ pub struct Nft {
     pub reinforce: u32,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
+pub struct Summary {
+    pub character: Character,
+    #[serde(alias = "tradeType")]
+    pub trade_type: u8,
+    #[serde(alias = "equipItem")]
+    pub equip_items: HashMap<String, EquipItem>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
+pub struct Character {
+    #[serde(alias = "worldName")]
+    pub world_name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
+pub struct EquipItem {
+    #[serde(alias = "itemIdx")]
+    pub item_idx: String,
+    pub enhance: String,
+    #[serde(alias = "refineStep")]
+    pub refine_step: String,
+    pub grade: String,
+    pub tier: String,
+    #[serde(alias = "itemType")]
+    pub item_type: String,
+    #[serde(alias = "itemName")]
+    pub item_name: String,
+    #[serde(alias = "itemPath")]
+    pub item_path: String,
+}
