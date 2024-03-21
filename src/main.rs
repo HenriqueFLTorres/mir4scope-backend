@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -12,7 +13,8 @@ use mongodb::{
 
 use responses::{
     nft::Nft,
-    stats::StatsResponse
+    stats::StatsResponse,
+    skills::{ SkillsResponse, Skills }
 };
 
 mod utils;
@@ -103,6 +105,16 @@ async fn retrieve_and_save_nft(
                 )
                 .await
                 .expect("can't get nft stats");
+                get_nft_skills(
+                    nft_collection.clone(),
+                    &character["transportID"],
+                    &character["class"],
+                    client.clone(),
+                    database.clone(),
+                    record.inserted_id.as_object_id().unwrap()
+                )
+                .await
+                .expect("can't get nft skills");
             }
         }
     }
@@ -160,6 +172,38 @@ async fn get_nft_stats(
     let record = stats_collection.insert_one(stats_json, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": { "stats_id": record.inserted_id.as_object_id()  } };
+
+    nft_collection.update_one(filter, update, None).await?;
+
+    Ok(())
+}
+
+async fn get_nft_skills(
+    nft_collection: Collection<Nft>,
+    transport_id: &serde_json::Value,
+    character_class: &serde_json::Value,
+    client: reqwest::Client,
+    database: Database,
+    record_id: ObjectId,
+) -> anyhow::Result<()> {
+    let request_url = format!(
+        "https://webapi.mir4global.com/nft/character/skills?transportID={transport_id}&class={character_class}&languageCode=en",
+        transport_id = transport_id,
+        character_class = character_class,
+    );
+
+    let response = client.get(request_url).send().await?.text().await?;
+
+    let response_json: SkillsResponse = serde_json::from_str(&response)?;
+    let skills_hashmap: HashMap<String, String> = response_json.data.iter().map(|skill_object| (skill_object.skill_name.clone(), skill_object.skill_level.clone())).collect();
+
+    let skills_to_db: Skills = Skills { skills: skills_hashmap, nft_id: record_id };
+
+    let skills_collection = database.collection("Skills");
+
+    let record = skills_collection.insert_one(skills_to_db, None).await?;
+    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let update = doc! { "$set": { "skills_id": record.inserted_id.as_object_id()  } };
 
     nft_collection.update_one(filter, update, None).await?;
 
