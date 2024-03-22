@@ -4,4 +4,5 @@ pub mod training;
 pub mod building;
 pub mod nft;
 pub mod equip_item;
-mod summary;
+pub mod summary;
+pub mod spirits;
