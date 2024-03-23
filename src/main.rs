@@ -12,6 +12,7 @@ use mongodb::{
 
 use crate::responses::assets::AssetsResponse;
 use crate::responses::building::{Building, BuildingResponse};
+use crate::responses::potentials::PotentialsResponse;
 use crate::responses::training::{Training, TrainingResponse};
 use responses::{nft::Nft, skills::SkillsResponse, spirits::SpiritsResponse, stats::StatsResponse};
 
@@ -99,24 +100,25 @@ async fn retrieve_and_save_nft(
                         &nft_collection,
                         &character["transportID"],
                         &client,
-                        &database,
+                        &database
                     ),
                     get_nft_skills(
                         &nft_collection,
                         &character["transportID"],
                         &character["class"],
                         &client,
-                        &database,
+                        &database
                     ),
                     get_nft_spirits(
                         &nft_collection,
                         &character["transportID"],
                         &client,
-                        &database,
+                        &database
                     ),
-                    get_nft_training(&nft_collection, &character["transportID"], &client,),
-                    get_nft_buildings(&nft_collection, &character["transportID"], &client,),
-                    get_nft_assets(&nft_collection, &character["transportID"], &client,)
+                    get_nft_training(&nft_collection, &character["transportID"], &client),
+                    get_nft_buildings(&nft_collection, &character["transportID"], &client),
+                    get_nft_assets(&nft_collection, &character["transportID"], &client),
+                    get_nft_potentials(&nft_collection, &character["transportID"], &client)
                 );
             }
         }
@@ -346,6 +348,27 @@ async fn get_nft_assets(
 
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": { "assets": bson::to_bson(&response_json.data)?}  };
+
+    nft_collection.update_one(filter, update, None).await?;
+
+    Ok(())
+}
+
+async fn get_nft_potentials(
+    nft_collection: &Collection<Nft>,
+    transport_id: &serde_json::Value,
+    client: &reqwest::Client,
+) -> anyhow::Result<()> {
+    let request_url = format!(
+        "https://webapi.mir4global.com/nft/character/potential?transportID={transport_id}&languageCode=en",
+        transport_id = transport_id,
+    );
+
+    let response = client.get(request_url).send().await?.text().await?;
+    let response_json: PotentialsResponse = serde_json::from_str(&response)?;
+
+    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let update = doc! { "$set": { "potentials": bson::to_bson(&response_json.data)?}  };
 
     nft_collection.update_one(filter, update, None).await?;
 
