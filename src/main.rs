@@ -12,6 +12,7 @@ use mongodb::{
 
 use crate::responses::assets::AssetsResponse;
 use crate::responses::building::{Building, BuildingResponse};
+use crate::responses::holy_stuff::{HolyStuff, HolyStuffResponse};
 use crate::responses::potentials::PotentialsResponse;
 use crate::responses::training::{Training, TrainingResponse};
 use responses::{nft::Nft, skills::SkillsResponse, spirits::SpiritsResponse, stats::StatsResponse};
@@ -118,7 +119,8 @@ async fn retrieve_and_save_nft(
                     get_nft_training(&nft_collection, &character["transportID"], &client),
                     get_nft_buildings(&nft_collection, &character["transportID"], &client),
                     get_nft_assets(&nft_collection, &character["transportID"], &client),
-                    get_nft_potentials(&nft_collection, &character["transportID"], &client)
+                    get_nft_potentials(&nft_collection, &character["transportID"], &client),
+                    get_nft_holy_stuff(&nft_collection, &character["transportID"], &client)
                 );
             }
         }
@@ -369,6 +371,37 @@ async fn get_nft_potentials(
 
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": { "potentials": bson::to_bson(&response_json.data)?}  };
+
+    nft_collection.update_one(filter, update, None).await?;
+
+    Ok(())
+}
+
+async fn get_nft_holy_stuff(
+    nft_collection: &Collection<Nft>,
+    transport_id: &serde_json::Value,
+    client: &reqwest::Client,
+) -> anyhow::Result<()> {
+    let request_url = format!(
+        "https://webapi.mir4global.com/nft/character/holystuff?transportID={transport_id}&languageCode=en",
+        transport_id = transport_id,
+    );
+
+    let response = client.get(request_url).send().await?.text().await?;
+    let response_json: HolyStuffResponse = serde_json::from_str(&response)?;
+    let holy_stuff_hashmap: HashMap<String, String> = response_json
+        .data
+        .iter()
+        .map(|holy_stuff_object| {
+            (
+                holy_stuff_object.1.holy_stuff_name.clone(),
+                holy_stuff_object.1.grade.clone(),
+            )
+        })
+        .collect();
+
+    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let update = doc! { "$set": { "holy_stuff": bson::to_bson(&holy_stuff_hashmap)?}  };
 
     nft_collection.update_one(filter, update, None).await?;
 
