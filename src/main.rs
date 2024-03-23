@@ -10,9 +10,10 @@ use mongodb::{
     Client, Collection, Database,
 };
 
-use responses::{nft::Nft, skills::SkillsResponse, spirits::SpiritsResponse, stats::StatsResponse};
+use crate::responses::assets::AssetsResponse;
 use crate::responses::building::{Building, BuildingResponse};
 use crate::responses::training::{Training, TrainingResponse};
+use responses::{nft::Nft, skills::SkillsResponse, spirits::SpiritsResponse, stats::StatsResponse};
 
 mod responses;
 mod utils;
@@ -113,16 +114,9 @@ async fn retrieve_and_save_nft(
                         &client,
                         &database,
                     ),
-                    get_nft_training(
-                        &nft_collection,
-                        &character["transportID"],
-                        &client,
-                    ),
-                    get_nft_buildings(
-                        &nft_collection,
-                        &character["transportID"],
-                        &client,
-                    )
+                    get_nft_training(&nft_collection, &character["transportID"], &client,),
+                    get_nft_buildings(&nft_collection, &character["transportID"], &client,),
+                    get_nft_assets(&nft_collection, &character["transportID"], &client,)
                 );
             }
         }
@@ -235,15 +229,38 @@ async fn get_nft_training(
 
     let response_json: TrainingResponse = serde_json::from_str(&response).unwrap();
     let training_hashmap: HashMap<String, String> = HashMap::from([
-        ("Violet Mist Art".to_string(), response_json.data.violet_mist_art.force_level),
-        ("Muscle Strength Manual".to_string(), response_json.data.muscle_strength_manual.force_level),
-        ("Nine Yang Manual".to_string(), response_json.data.nine_yang_manual.force_level),
-        ("Toad Stance".to_string(), response_json.data.toad_stance.force_level),
-        ("Northern Profound Art".to_string(), response_json.data.northern_profound_art.force_level),
-        ("Nine Yin Manual".to_string(), response_json.data.nine_yin_manual.force_level),
+        (
+            "Violet Mist Art".to_string(),
+            response_json.data.violet_mist_art.force_level,
+        ),
+        (
+            "Muscle Strength Manual".to_string(),
+            response_json.data.muscle_strength_manual.force_level,
+        ),
+        (
+            "Nine Yang Manual".to_string(),
+            response_json.data.nine_yang_manual.force_level,
+        ),
+        (
+            "Toad Stance".to_string(),
+            response_json.data.toad_stance.force_level,
+        ),
+        (
+            "Northern Profound Art".to_string(),
+            response_json.data.northern_profound_art.force_level,
+        ),
+        (
+            "Nine Yin Manual".to_string(),
+            response_json.data.nine_yin_manual.force_level,
+        ),
     ]);
 
-    let training_to_db: Training = Training { training: training_hashmap, collect_level: response_json.data.collect_level, collect_name: response_json.data.collect_name, constitution: response_json.data.consitution_level };
+    let training_to_db: Training = Training {
+        training: training_hashmap,
+        collect_level: response_json.data.collect_level,
+        collect_name: response_json.data.collect_name,
+        constitution: response_json.data.consitution_level,
+    };
 
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": bson::to_bson(&training_to_db)? };
@@ -266,9 +283,20 @@ async fn get_nft_buildings(
     let response = client.get(request_url).send().await?.text().await?;
 
     let response_json: BuildingResponse = serde_json::from_str(&response).unwrap();
-    let building_hashmap: HashMap<String, String> = response_json.data.iter().map(|building_object| (building_object.1.building_name.clone(), building_object.1.building_level.clone())).collect();
+    let building_hashmap: HashMap<String, String> = response_json
+        .data
+        .iter()
+        .map(|building_object| {
+            (
+                building_object.1.building_name.clone(),
+                building_object.1.building_level.clone(),
+            )
+        })
+        .collect();
 
-    let building_to_db: Building = Building { building: building_hashmap };
+    let building_to_db: Building = Building {
+        building: building_hashmap,
+    };
 
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": bson::to_bson(&building_to_db)? };
@@ -297,6 +325,27 @@ async fn get_nft_spirits(
     let record = spirits_collection.insert_one(response_json, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": { "spirits_id": record.inserted_id.as_object_id() } };
+
+    nft_collection.update_one(filter, update, None).await?;
+
+    Ok(())
+}
+
+async fn get_nft_assets(
+    nft_collection: &Collection<Nft>,
+    transport_id: &serde_json::Value,
+    client: &reqwest::Client,
+) -> anyhow::Result<()> {
+    let request_url = format!(
+        "https://webapi.mir4global.com/nft/character/assets?transportID={transport_id}&languageCode=en",
+        transport_id = transport_id,
+    );
+
+    let response = client.get(request_url).send().await?.text().await?;
+    let response_json: AssetsResponse = serde_json::from_str(&response)?;
+
+    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let update = doc! { "$set": { "assets": bson::to_bson(&response_json.data)?}  };
 
     nft_collection.update_one(filter, update, None).await?;
 

@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use crate::utils::object_id;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TrainingResponse {
     pub code: u16,
-    pub data: TrainingResponseData
+    pub data: TrainingResponseData,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -39,7 +39,7 @@ pub struct TrainingObject {
     #[serde(alias = "forceLevel")]
     pub force_level: String,
     #[serde(alias = "forceName")]
-    pub force_name: String
+    pub force_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
