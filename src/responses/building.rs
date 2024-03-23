@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BuildingResponse {
     pub code: u16,
-    pub data: HashMap<String, BuildingObject>
+    pub data: HashMap<String, BuildingObject>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

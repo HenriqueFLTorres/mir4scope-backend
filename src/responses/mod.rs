@@ -1,8 +1,9 @@
-pub mod stats;
-pub mod skills;
-pub mod training;
+pub mod assets;
 pub mod building;
-pub mod nft;
 pub mod equip_item;
-pub mod summary;
+pub mod nft;
+pub mod skills;
 pub mod spirits;
+pub mod stats;
+pub mod summary;
+pub mod training;
