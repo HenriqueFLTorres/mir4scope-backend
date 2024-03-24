@@ -9,7 +9,7 @@ pub struct InventoryResponse {
     pub inventory: Vec<InventoryItem>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct InventoryItem {
     #[serde(alias = "itemUID")]
@@ -41,7 +41,7 @@ pub async fn get_nft_inventory(
     transport_id: &serde_json::Value,
     client: &reqwest::Client,
     database: &Database
-) -> anyhow::Result<()> {
+) -> anyhow::Result<Vec<InventoryItem>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/inven?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
@@ -50,13 +50,13 @@ pub async fn get_nft_inventory(
     let response = client.get(request_url).send().await?.text().await?;
     let response_json: InventoryResponse = serde_json::from_str(&response)?;
 
-    let inventory_collection = database.collection("Inventory");
+    let inventory_collection: mongodb::Collection<InventoryResponse> = database.collection("Inventory");
 
-    let record = inventory_collection.insert_one(response_json, None).await?;
+    let record = inventory_collection.insert_one(&response_json, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": { "inventory_id": record.inserted_id.as_object_id() } };
 
     nft_collection.update_one(filter, update, None).await?;
 
-    Ok(())
+    Ok(response_json.inventory)
 }
