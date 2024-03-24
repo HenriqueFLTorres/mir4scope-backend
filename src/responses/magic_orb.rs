@@ -1,10 +1,10 @@
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct MagicOrbResponse {
-    pub data: MagicOrbResponseObject
+    pub data: MagicOrbResponseObject,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -13,7 +13,7 @@ pub struct MagicOrbResponseObject {
     #[serde(alias = "equipItem")]
     pub equip_item: EquipItem,
     #[serde(alias = "activeDeck")]
-    pub active_deck: u8
+    pub active_deck: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -22,7 +22,6 @@ pub enum EquipItem {
     HashMap(HashMap<String, HashMap<String, MagicOrb>>),
     EmptyArray(Vec<()>),
 }
-
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]

@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -9,7 +9,7 @@ pub struct SuccessionResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SuccessionDataResponse {
     #[serde(alias = "equipItem")]
-    pub equip_item: EquipItem
+    pub equip_item: EquipItem,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
