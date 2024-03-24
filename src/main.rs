@@ -17,6 +17,7 @@ use crate::responses::potentials::PotentialsResponse;
 use crate::responses::training::{Training, TrainingResponse};
 use crate::responses::succession::SuccessionResponse;
 use crate::responses::magic_orb::MagicOrbResponse;
+use crate::responses::magic_stone::MagicStoneResponse;
 use responses::{nft::Nft, skills::SkillsResponse, spirits::SpiritsResponse, stats::StatsResponse};
 
 mod responses;
@@ -130,6 +131,12 @@ async fn retrieve_and_save_nft(
                         &client,
                         &database
                     ),
+                    get_nft_magic_stone(
+                        &nft_collection,
+                        &character["transportID"],
+                        &client,
+                        &database
+                    )
                 );
             }
         }
@@ -457,6 +464,31 @@ async fn get_nft_magic_orb(
     let record = magic_orb_collection.insert_one(response_json.data, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": { "magic_orb_id": record.inserted_id.as_object_id() } };
+
+    nft_collection.update_one(filter, update, None).await?;
+
+    Ok(())
+}
+
+async fn get_nft_magic_stone(
+    nft_collection: &Collection<Nft>,
+    transport_id: &serde_json::Value,
+    client: &reqwest::Client,
+    database: &Database,
+) -> anyhow::Result<()> {
+    let request_url = format!(
+        "https://webapi.mir4global.com/nft/character/magicstone?transportID={transport_id}&languageCode=en",
+        transport_id = transport_id,
+    );
+
+    let response = client.get(request_url).send().await?.text().await?;
+    let response_json: MagicStoneResponse = serde_json::from_str(&response)?;
+
+    let magic_stone_collection = database.collection("Magic Stone");
+
+    let record = magic_stone_collection.insert_one(response_json.data, None).await?;
+    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let update = doc! { "$set": { "magic_stone_id": record.inserted_id.as_object_id() } };
 
     nft_collection.update_one(filter, update, None).await?;
 
