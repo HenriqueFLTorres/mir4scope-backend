@@ -2,6 +2,7 @@ pub mod assets;
 pub mod building;
 pub mod equip_item;
 pub mod holy_stuff;
+pub mod inventory;
 pub mod magic_orb;
 pub mod magic_stone;
 pub mod mystical_piece;

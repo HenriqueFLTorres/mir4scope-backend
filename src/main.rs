@@ -13,12 +13,13 @@ use mongodb::{
 use crate::responses::assets::AssetsResponse;
 use crate::responses::building::{Building, BuildingResponse};
 use crate::responses::holy_stuff::HolyStuffResponse;
-use crate::responses::potentials::PotentialsResponse;
-use crate::responses::training::{Training, TrainingResponse};
-use crate::responses::succession::SuccessionResponse;
+use crate::responses::inventory::InventoryResponse;
 use crate::responses::magic_orb::MagicOrbResponse;
 use crate::responses::magic_stone::MagicStoneResponse;
 use crate::responses::mystical_piece::MysticalPieceResponse;
+use crate::responses::potentials::PotentialsResponse;
+use crate::responses::succession::SuccessionResponse;
+use crate::responses::training::{Training, TrainingResponse};
 use responses::{nft::Nft, skills::SkillsResponse, spirits::SpiritsResponse, stats::StatsResponse};
 
 mod responses;
@@ -139,6 +140,12 @@ async fn retrieve_and_save_nft(
                         &database
                     ),
                     get_nft_mystical_piece(
+                        &nft_collection,
+                        &character["transportID"],
+                        &client,
+                        &database
+                    ),
+                    get_nft_inventory(
                         &nft_collection,
                         &character["transportID"],
                         &client,
@@ -521,6 +528,31 @@ async fn get_nft_mystical_piece(
     let record = mystical_piece_collection.insert_one(response_json.data, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": { "mystical_piece_id": record.inserted_id.as_object_id() } };
+
+    nft_collection.update_one(filter, update, None).await?;
+
+    Ok(())
+}
+
+async fn get_nft_inventory(
+    nft_collection: &Collection<Nft>,
+    transport_id: &serde_json::Value,
+    client: &reqwest::Client,
+    database: &Database,
+) -> anyhow::Result<()> {
+    let request_url = format!(
+        "https://webapi.mir4global.com/nft/character/inven?transportID={transport_id}&languageCode=en",
+        transport_id = transport_id,
+    );
+
+    let response = client.get(request_url).send().await?.text().await?;
+    let response_json: InventoryResponse = serde_json::from_str(&response)?;
+
+    let inventory_collection = database.collection("Inventory");
+
+    let record = inventory_collection.insert_one(response_json, None).await?;
+    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let update = doc! { "$set": { "inventory_id": record.inserted_id.as_object_id() } };
 
     nft_collection.update_one(filter, update, None).await?;
 
