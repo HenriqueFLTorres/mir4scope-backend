@@ -1,5 +1,7 @@
 use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
+use crate::Nft;
+use mongodb::{ bson, bson::doc, Collection };
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TrainingResponse {
@@ -50,4 +52,44 @@ pub struct Training {
     pub collect_name: String,
     #[serde(alias = "collectLevel")]
     pub collect_level: u8,
+}
+
+pub async fn get_nft_training(
+    nft_collection: &Collection<Nft>,
+    transport_id: &serde_json::Value,
+    client: &reqwest::Client
+) -> anyhow::Result<()> {
+    let request_url = format!(
+        "https://webapi.mir4global.com/nft/character/training?transportID={transport_id}&languageCode=en",
+        transport_id = transport_id
+    );
+
+    let response = client.get(request_url).send().await?.text().await?;
+
+    let response_json: TrainingResponse = serde_json::from_str(&response).unwrap();
+    let training_hashmap: HashMap<String, String> = HashMap::from([
+        ("Violet Mist Art".to_string(), response_json.data.violet_mist_art.force_level),
+        (
+            "Muscle Strength Manual".to_string(),
+            response_json.data.muscle_strength_manual.force_level,
+        ),
+        ("Nine Yang Manual".to_string(), response_json.data.nine_yang_manual.force_level),
+        ("Toad Stance".to_string(), response_json.data.toad_stance.force_level),
+        ("Northern Profound Art".to_string(), response_json.data.northern_profound_art.force_level),
+        ("Nine Yin Manual".to_string(), response_json.data.nine_yin_manual.force_level),
+    ]);
+
+    let training_to_db: Training = Training {
+        training: training_hashmap,
+        collect_level: response_json.data.collect_level,
+        collect_name: response_json.data.collect_name,
+        constitution: response_json.data.consitution_level,
+    };
+
+    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let update = doc! { "$set": bson::to_bson(&training_to_db)? };
+
+    nft_collection.update_one(filter, update, None).await?;
+
+    Ok(())
 }
