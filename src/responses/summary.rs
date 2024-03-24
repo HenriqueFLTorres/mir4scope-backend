@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{ responses::item_detail::{ get_item_detail, ItemDetail }, Nft };
 use mongodb::{ bson, bson::doc, Collection };
 
-use super::inventory::InventoryItem;
+use super::{ inventory::InventoryItem, item_detail::ItemDetailAdd };
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -48,7 +48,7 @@ pub struct EquipItem {
     pub power_score: u32,
     pub options: Vec<ItemDetail>,
     #[serde(alias = "addOptions")]
-    pub add_option: Vec<ItemDetail>,
+    pub add_option: Vec<ItemDetailAdd>,
 }
 
 pub async fn get_nft_summary(

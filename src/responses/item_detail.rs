@@ -34,8 +34,8 @@ pub struct ItemDetail {
 pub struct ItemDetailAdd {
     #[serde(alias = "optionName")]
     pub name: String,
-    #[serde(alias = "optionValue")]
-    pub value: f32,
+    #[serde(alias = "optionValue", serialize_with = "serialize_float_rounded")]
+    pub value: f64,
     #[serde(alias = "optionAddFormat")]
     pub format: String,
 }

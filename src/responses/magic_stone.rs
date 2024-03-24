@@ -2,6 +2,10 @@ use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 use crate::Nft;
 use mongodb::{ bson, bson::doc, Collection, Database };
+use super::{
+    inventory::InventoryItem,
+    item_detail::{ get_item_detail, ItemDetail, ItemDetailAdd },
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -25,7 +29,7 @@ pub enum EquipItem {
     EmptyArray(Vec<()>),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct MagicStone {
     #[serde(alias = "itemIdx")]
@@ -40,13 +44,21 @@ pub struct MagicStone {
     pub item_name: String,
     #[serde(alias = "itemPath")]
     pub item_path: String,
+    #[serde(alias = "powerScore", default)]
+    pub power_score: u32,
+    #[serde(default)]
+    pub options: Vec<ItemDetail>,
+    #[serde(alias = "addOptions", default)]
+    pub add_option: Vec<ItemDetailAdd>,
 }
 
 pub async fn get_nft_magic_stone(
     nft_collection: &Collection<Nft>,
     transport_id: &serde_json::Value,
+    class: &serde_json::Value,
     client: &reqwest::Client,
-    database: &Database
+    database: &Database,
+    inventory: Vec<InventoryItem>
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/magicstone?transportID={transport_id}&languageCode=en",
@@ -56,9 +68,33 @@ pub async fn get_nft_magic_stone(
     let response = client.get(request_url).send().await?.text().await?;
     let response_json: MagicStoneResponse = serde_json::from_str(&response)?;
 
+    let mut magic_stones_decks: HashMap<String, HashMap<String, MagicStone>> = HashMap::new();
+    for (set_index, inner_hashmap) in response_json.data.equip_item.clone().into_iter() {
+        let mut magic_stones: HashMap<String, MagicStone> = HashMap::new();
+        for (slot_index, mut stone_value) in inner_hashmap.clone().into_iter() {
+            let item_match = inventory
+                .iter()
+                .find(|inventory_item| inventory_item.item_id == stone_value.item_idx)
+                .expect("Magic stone not found in inventory.");
+            let item_detail = get_item_detail(
+                client,
+                transport_id,
+                class,
+                &serde_json::from_str(&item_match.item_uid)?
+            ).await.expect("Magic stone item detail failed");
+
+            stone_value.options = item_detail.options;
+            stone_value.add_option = item_detail.add_option;
+            stone_value.power_score = item_detail.power_score;
+
+            magic_stones.insert(slot_index, stone_value);
+        }
+        magic_stones_decks.insert(set_index, magic_stones);
+    }
+
     let magic_stone_collection = database.collection("Magic Stone");
 
-    let record = magic_stone_collection.insert_one(response_json.data, None).await?;
+    let record = magic_stone_collection.insert_one(magic_stones_decks, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": { "magic_stone_id": record.inserted_id.as_object_id() } };
 
