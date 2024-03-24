@@ -26,10 +26,3 @@ pub struct Nft {
     #[serde(alias = "Reinforce")]
     pub reinforce: u32,
 }
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
-pub struct Character {
-    #[serde(alias = "worldName")]
-    pub world_name: String,
-}

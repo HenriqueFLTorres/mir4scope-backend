@@ -7,12 +7,43 @@ use mongodb::{ bson, bson::doc, Collection };
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
-pub struct Summary {
+pub struct SummaryResponse {
+    pub data: SummaryResponseObject,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
+pub struct SummaryResponseObject {
     pub character: Character,
     #[serde(alias = "tradeType")]
     pub trade_type: u8,
     #[serde(alias = "equipItem")]
     pub equip_items: HashMap<String, EquipItem>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
+pub struct Character {
+    #[serde(alias = "worldName")]
+    pub world_name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
+pub struct EquipItem {
+    #[serde(alias = "itemIdx")]
+    pub item_idx: String,
+    pub enhance: String,
+    #[serde(alias = "refineStep")]
+    pub refine_step: String,
+    pub grade: String,
+    pub tier: String,
+    #[serde(alias = "itemType")]
+    pub item_type: String,
+    #[serde(alias = "itemName")]
+    pub item_name: String,
+    #[serde(alias = "itemPath")]
+    pub item_path: String,
 }
 
 pub async fn get_nft_summary(
@@ -25,13 +56,12 @@ pub async fn get_nft_summary(
         seq = seq
     );
 
-    let response = client.get(request_url).send().await?;
-    let json: serde_json::Value = response.json().await?;
-    let data = &json["data"];
+    let response = client.get(request_url).send().await?.text().await?;
+    let response_json: SummaryResponse = serde_json::from_str(&response)?;
 
     let filter = doc! { "seq": bson::to_bson(seq)? };
     let update =
-        doc! { "$set": { "trade_type": bson::to_bson(&data["tradeType"])?, "world_name": bson::to_bson(&data["character"]["worldName"])?, "equip_items": bson::to_bson(&data["equipItem"])? } };
+        doc! { "$set": { "trade_type": bson::to_bson(&response_json.data.trade_type)?, "world_name": bson::to_bson(&response_json.data.character.world_name)?, "equip_items": bson::to_bson(&response_json.data.equip_items)? } };
 
     nft_collection.update_one(filter, update, None).await?;
 
