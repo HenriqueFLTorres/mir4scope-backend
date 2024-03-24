@@ -58,7 +58,7 @@ pub async fn get_nft_magic_stone(
     class: &serde_json::Value,
     client: &reqwest::Client,
     database: &Database,
-    inventory: Vec<InventoryItem>
+    inventory: &Vec<InventoryItem>
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/magicstone?transportID={transport_id}&languageCode=en",
@@ -93,8 +93,10 @@ pub async fn get_nft_magic_stone(
     }
 
     let magic_stone_collection = database.collection("Magic Stone");
+    let magic_stone_to_db =
+        doc! { "equip_item": bson::to_bson(&magic_stones_decks)?, "active_deck": bson::to_bson(&response_json.data.active_deck)? };
 
-    let record = magic_stone_collection.insert_one(magic_stones_decks, None).await?;
+    let record = magic_stone_collection.insert_one(magic_stone_to_db, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": { "magic_stone_id": record.inserted_id.as_object_id() } };
 
