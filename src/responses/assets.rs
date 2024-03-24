@@ -1,5 +1,6 @@
 use crate::utils::object_id;
-use serde::{ Deserialize, Serialize };
+use serde::{ Deserialize, Deserializer, de, Serialize };
+use serde_json::Value;
 use crate::Nft;
 use mongodb::{ bson, bson::doc, Collection };
 
@@ -12,6 +13,16 @@ pub struct AssetsResponse {
     pub nft_id: mongodb::bson::oid::ObjectId,
 }
 
+fn to_string<'de, D: Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
+    Ok(match Value::deserialize(deserializer)? {
+        Value::String(s) => s.to_string(),
+        Value::Number(num) => num.to_string(),
+        _ => {
+            return Err(de::Error::custom("wrong type"));
+        }
+    })
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct Assets {
@@ -19,9 +30,11 @@ pub struct Assets {
     pub energy: String,
     pub darksteel: String,
     pub speedups: String,
+    #[serde(deserialize_with = "to_string")]
     pub dragonjade: String,
     pub acientcoins: String,
-    pub dragonsteel: i32,
+    #[serde(deserialize_with = "to_string")]
+    pub dragonsteel: String,
 }
 
 pub async fn get_nft_assets(
