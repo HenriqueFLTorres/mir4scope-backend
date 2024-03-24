@@ -7,5 +7,6 @@ pub mod potentials;
 pub mod skills;
 pub mod spirits;
 pub mod stats;
+pub mod succession;
 pub mod summary;
 pub mod training;
