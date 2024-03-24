@@ -1,5 +1,3 @@
-use crate::responses::equip_item::EquipItem;
-use crate::responses::nft::Character;
 use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 use crate::Nft;
