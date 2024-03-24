@@ -12,11 +12,11 @@ use mongodb::{
 
 use crate::responses::assets::AssetsResponse;
 use crate::responses::building::{Building, BuildingResponse};
-use crate::responses::equip_item;
 use crate::responses::holy_stuff::HolyStuffResponse;
 use crate::responses::potentials::PotentialsResponse;
 use crate::responses::training::{Training, TrainingResponse};
-use crate::responses::succession::{SuccessionResponse, SuccessionObject};
+use crate::responses::succession::SuccessionResponse;
+use crate::responses::magic_orb::MagicOrbResponse;
 use responses::{nft::Nft, skills::SkillsResponse, spirits::SpiritsResponse, stats::StatsResponse};
 
 mod responses;
@@ -124,6 +124,12 @@ async fn retrieve_and_save_nft(
                     get_nft_potentials(&nft_collection, &character["transportID"], &client),
                     get_nft_holy_stuff(&nft_collection, &character["transportID"], &client),
                     get_nft_succession(&nft_collection, &character["transportID"], &client),
+                    get_nft_magic_orb(
+                        &nft_collection,
+                        &character["transportID"],
+                        &client,
+                        &database
+                    ),
                 );
             }
         }
@@ -426,6 +432,31 @@ async fn get_nft_succession(
 
     let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
     let update = doc! { "$set": { "succession": bson::to_bson(&response_json.data.equip_item)? }  };
+
+    nft_collection.update_one(filter, update, None).await?;
+
+    Ok(())
+}
+
+async fn get_nft_magic_orb(
+    nft_collection: &Collection<Nft>,
+    transport_id: &serde_json::Value,
+    client: &reqwest::Client,
+    database: &Database,
+) -> anyhow::Result<()> {
+    let request_url = format!(
+        "https://webapi.mir4global.com/nft/character/magicorb?transportID={transport_id}&languageCode=en",
+        transport_id = transport_id,
+    );
+
+    let response = client.get(request_url).send().await?.text().await?;
+    let response_json: MagicOrbResponse = serde_json::from_str(&response)?;
+
+    let magic_orb_collection = database.collection("Magic Orb");
+
+    let record = magic_orb_collection.insert_one(response_json.data, None).await?;
+    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let update = doc! { "$set": { "magic_orb_id": record.inserted_id.as_object_id() } };
 
     nft_collection.update_one(filter, update, None).await?;
 

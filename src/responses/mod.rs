@@ -2,6 +2,7 @@ pub mod assets;
 pub mod building;
 pub mod equip_item;
 pub mod holy_stuff;
+pub mod magic_orb;
 pub mod nft;
 pub mod potentials;
 pub mod skills;
