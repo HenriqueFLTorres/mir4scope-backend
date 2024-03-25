@@ -1,4 +1,4 @@
-use serde::{ Deserialize, Serialize };
+use serde::{ Deserialize, Serialize, Serializer };
 use std::collections::HashMap;
 use crate::Nft;
 use mongodb::{ bson, bson::doc, Collection };
@@ -12,8 +12,14 @@ pub struct HolyStuffResponse {
 pub struct HolyStuffObject {
     #[serde(alias = "HolyStuffName")]
     pub holy_stuff_name: String,
-    #[serde(alias = "Grade")]
+    #[serde(alias = "Grade", serialize_with = "serialize_grade_value")]
     pub grade: String,
+}
+
+fn serialize_grade_value<S>(grade: &String, serializer: S) -> Result<S::Ok, S::Error>
+    where S: Serializer
+{
+    if grade.is_empty() { serializer.serialize_str("0") } else { serializer.serialize_str(grade) }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
