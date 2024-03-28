@@ -1,8 +1,8 @@
 use crate::utils::object_id;
-use serde::{ Deserialize, Deserializer, de, Serialize };
-use serde_json::Value;
 use crate::Nft;
-use mongodb::{ bson, bson::doc, Collection };
+use mongodb::{bson, bson::doc, Collection};
+use serde::{de, Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -38,9 +38,9 @@ pub struct Assets {
 }
 
 pub async fn get_nft_assets(
-    nft_collection: &Collection<Nft>,
-    transport_id: &serde_json::Value,
-    client: &reqwest::Client
+    nft_collection: Collection<Nft>,
+    transport_id: serde_json::Value,
+    client: reqwest::Client,
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/assets?transportID={transport_id}&languageCode=en",
@@ -50,7 +50,7 @@ pub async fn get_nft_assets(
     let response = client.get(request_url).send().await?.text().await?;
     let response_json: AssetsResponse = serde_json::from_str(&response)?;
 
-    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
     let update = doc! { "$set": { "assets": bson::to_bson(&response_json.data)?} };
 
     nft_collection.update_one(filter, update, None).await?;

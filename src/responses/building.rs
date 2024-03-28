@@ -1,7 +1,7 @@
-use serde::{ Deserialize, Serialize };
-use std::collections::HashMap;
 use crate::Nft;
-use mongodb::{ bson, bson::doc, Collection };
+use mongodb::{bson, bson::doc, Collection};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BuildingResponse {
@@ -24,9 +24,9 @@ pub struct Building {
 }
 
 pub async fn get_nft_buildings(
-    nft_collection: &Collection<Nft>,
-    transport_id: &serde_json::Value,
-    client: &reqwest::Client
+    nft_collection: Collection<Nft>,
+    transport_id: serde_json::Value,
+    client: reqwest::Client,
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/building?transportID={transport_id}&languageCode=en",
@@ -36,10 +36,14 @@ pub async fn get_nft_buildings(
     let response = client.get(request_url).send().await?.text().await?;
 
     let response_json: BuildingResponse = serde_json::from_str(&response).unwrap();
-    let building_hashmap: HashMap<String, String> = response_json.data
+    let building_hashmap: HashMap<String, String> = response_json
+        .data
         .iter()
         .map(|building_object| {
-            (building_object.1.building_name.clone(), building_object.1.building_level.clone())
+            (
+                building_object.1.building_name.clone(),
+                building_object.1.building_level.clone(),
+            )
         })
         .collect();
 
@@ -47,7 +51,7 @@ pub async fn get_nft_buildings(
         building: building_hashmap,
     };
 
-    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
     let update = doc! { "$set": bson::to_bson(&building_to_db)? };
 
     nft_collection.update_one(filter, update, None).await?;

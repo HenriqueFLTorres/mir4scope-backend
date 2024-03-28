@@ -1,6 +1,6 @@
-use serde::{ Deserialize, Serialize, Serializer };
-use serde_json;
 use mongodb::bson::doc;
+use serde::{Deserialize, Serialize, Serializer};
+use serde_json;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -41,7 +41,8 @@ pub struct ItemDetailAdd {
 }
 
 fn serialize_float_rounded<S>(value: &f64, serializer: S) -> Result<S::Ok, S::Error>
-    where S: Serializer
+where
+    S: Serializer,
 {
     let decimal_places = 2;
     let rounded_value =
@@ -53,7 +54,7 @@ pub async fn get_item_detail(
     client: &reqwest::Client,
     transport_id: &serde_json::Value,
     class: &serde_json::Value,
-    item_uid: &serde_json::Value
+    item_uid: &serde_json::Value,
 ) -> anyhow::Result<ItemDetailData> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/itemdetail?transportID={transport_id}&class={class}&itemUID={item_uid}&languageCode=en",

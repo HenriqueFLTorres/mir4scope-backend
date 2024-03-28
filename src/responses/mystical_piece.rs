@@ -1,11 +1,11 @@
-use serde::{ Deserialize, Serialize };
-use std::collections::HashMap;
 use crate::Nft;
-use mongodb::{ bson, bson::doc, Collection, Database };
+use mongodb::{bson, bson::doc, Collection, Database};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use super::{
     inventory::InventoryItem,
-    item_detail::{ get_item_detail, ItemDetail, ItemDetailAdd },
+    item_detail::{get_item_detail, ItemDetail, ItemDetailAdd},
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -54,12 +54,12 @@ pub struct MysticalPiece {
 }
 
 pub async fn get_nft_mystical_piece(
-    nft_collection: &Collection<Nft>,
-    transport_id: &serde_json::Value,
-    class: &serde_json::Value,
-    client: &reqwest::Client,
-    database: &Database,
-    inventory: &Vec<InventoryItem>
+    nft_collection: Collection<Nft>,
+    transport_id: serde_json::Value,
+    class: serde_json::Value,
+    client: reqwest::Client,
+    database: Database,
+    inventory: Vec<InventoryItem>,
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/mysticalpiece?transportID={transport_id}&languageCode=en",
@@ -78,11 +78,13 @@ pub async fn get_nft_mystical_piece(
                 .find(|inventory_item| inventory_item.item_id == piece_value.item_idx)
                 .expect("Magic stone not found in inventory.");
             let item_detail = get_item_detail(
-                client,
-                transport_id,
-                class,
-                &serde_json::from_str(&item_match.item_uid)?
-            ).await.expect("Magic stone item detail failed");
+                &client,
+                &transport_id,
+                &class,
+                &serde_json::from_str(&item_match.item_uid)?,
+            )
+            .await
+            .expect("Magic stone item detail failed");
 
             piece_value.options = item_detail.options;
             piece_value.add_option = item_detail.add_option;
@@ -96,8 +98,10 @@ pub async fn get_nft_mystical_piece(
     let mystical_piece_collection = database.collection("Mystical Piece");
     let mystical_piece_to_db = doc! { "equip_item": bson::to_bson(&mystical_pieces_decks)?, "active_deck": bson::to_bson(&response_json.data.active_deck)? };
 
-    let record = mystical_piece_collection.insert_one(mystical_piece_to_db, None).await?;
-    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let record = mystical_piece_collection
+        .insert_one(mystical_piece_to_db, None)
+        .await?;
+    let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
     let update = doc! { "$set": { "mystical_piece_id": record.inserted_id.as_object_id() } };
 
     nft_collection.update_one(filter, update, None).await?;

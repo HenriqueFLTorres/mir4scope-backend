@@ -1,7 +1,7 @@
-use serde::{ Deserialize, Serialize };
-use std::collections::HashMap;
 use crate::Nft;
-use mongodb::{ bson, bson::doc, Collection, Database };
+use mongodb::{bson, bson::doc, Collection, Database};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -43,10 +43,10 @@ pub struct MagicOrb {
 }
 
 pub async fn get_nft_magic_orb(
-    nft_collection: &Collection<Nft>,
-    transport_id: &serde_json::Value,
-    client: &reqwest::Client,
-    database: &Database
+    nft_collection: Collection<Nft>,
+    transport_id: serde_json::Value,
+    client: reqwest::Client,
+    database: Database,
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/magicorb?transportID={transport_id}&languageCode=en",
@@ -58,8 +58,10 @@ pub async fn get_nft_magic_orb(
 
     let magic_orb_collection = database.collection("Magic Orb");
 
-    let record = magic_orb_collection.insert_one(response_json.data, None).await?;
-    let filter = doc! { "transport_id": bson::to_bson(transport_id)? };
+    let record = magic_orb_collection
+        .insert_one(response_json.data, None)
+        .await?;
+    let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
     let update = doc! { "$set": { "magic_orb_id": record.inserted_id.as_object_id() } };
 
     nft_collection.update_one(filter, update, None).await?;
