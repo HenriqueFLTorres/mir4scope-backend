@@ -1,6 +1,6 @@
 use mongodb::bson::doc;
 use serde::{ Deserialize, Serialize };
-use std::{ collections::HashMap, default };
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SuccessionResponse {

@@ -45,7 +45,8 @@ pub struct TrainingObject {
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct Training {
-    pub training: HashMap<String, String>,
+    #[serde(alias = "training")]
+    pub chi: HashMap<String, String>,
     pub constitution: u8,
     #[serde(alias = "collectName")]
     pub collect_name: String,
@@ -65,7 +66,7 @@ pub async fn get_nft_training(
     let response = client.get(request_url).send().await?.text().await?;
 
     let response_json: TrainingResponse = serde_json::from_str(&response).unwrap();
-    let training_hashmap: HashMap<String, String> = HashMap::from([
+    let chi_hashmap: HashMap<String, String> = HashMap::from([
         ("Violet Mist Art".to_string(), response_json.data.violet_mist_art.force_level),
         (
             "Muscle Strength Manual".to_string(),
@@ -78,7 +79,7 @@ pub async fn get_nft_training(
     ]);
 
     let training_to_db: Training = Training {
-        training: training_hashmap,
+        chi: chi_hashmap,
         collect_level: response_json.data.collect_level,
         collect_name: response_json.data.collect_name,
         constitution: response_json.data.consitution_level,
