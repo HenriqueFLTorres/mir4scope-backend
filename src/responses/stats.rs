@@ -1,15 +1,12 @@
-use crate::utils::object_id;
 use crate::Nft;
-use mongodb::{bson, bson::doc, Collection, Database};
-use serde::{Deserialize, Serialize};
+use mongodb::{ bson, bson::doc, Collection };
+use serde::{ Deserialize, Serialize };
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct StatsResponse {
     pub data: StatsObject,
-    #[serde(alias = "nftID")]
-    #[serde(default = "object_id")]
-    pub nft_id: mongodb::bson::oid::ObjectId,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -33,7 +30,6 @@ pub async fn get_nft_stats(
     nft_collection: Collection<Nft>,
     transport_id: serde_json::Value,
     client: reqwest::Client,
-    database: Database,
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/stats?transportID={transport_id}&languageCode=en",
@@ -42,13 +38,14 @@ pub async fn get_nft_stats(
 
     let response = client.get(request_url).send().await?.text().await?;
 
-    let stats_json: StatsResponse = serde_json::from_str(&response)?;
+    let response_json: StatsResponse = serde_json::from_str(&response)?;
+    let stats_hashmap: HashMap<String, String> = response_json.data.lists
+        .iter()
+        .map(|stats_object| { (stats_object.stat_name.clone(), stats_object.stat_value.clone()) })
+        .collect();
 
-    let stats_collection = database.collection("Stats");
-
-    let record = stats_collection.insert_one(stats_json, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
-    let update = doc! { "$set": { "stats_id": record.inserted_id.as_object_id()  } };
+    let update = doc! { "$set": { "stats": bson::to_bson(&stats_hashmap)? } };
 
     nft_collection.update_one(filter, update, None).await?;
 
