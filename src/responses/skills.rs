@@ -1,16 +1,12 @@
-use crate::utils::object_id;
 use crate::Nft;
-use mongodb::{bson, bson::doc, Collection, Database};
+use mongodb::{bson, bson::doc, Collection};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct SkillsResponse {
-    pub data: Vec<SkillObject>,
-    #[serde(alias = "nftID")]
-    #[serde(default = "object_id")]
-    pub nft_id: mongodb::bson::oid::ObjectId,
+    pub data: Vec<SkillObject>
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -33,7 +29,6 @@ pub async fn get_nft_skills(
     transport_id: serde_json::Value,
     character_class: serde_json::Value,
     client: reqwest::Client,
-    database: Database,
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/skills?transportID={transport_id}&class={character_class}&languageCode=en",
@@ -55,11 +50,8 @@ pub async fn get_nft_skills(
         })
         .collect();
 
-    let skills_collection = database.collection("Skills");
-
-    let record = skills_collection.insert_one(skills_hashmap, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
-    let update = doc! { "$set": { "skills_id": record.inserted_id.as_object_id()  } };
+    let update = doc! { "$set": { "skills": bson::to_bson(&skills_hashmap)?  } };
 
     nft_collection.update_one(filter, update, None).await?;
 
