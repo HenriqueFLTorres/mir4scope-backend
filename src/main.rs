@@ -153,14 +153,14 @@ async fn retrieve_and_save_nft(
                 Ok(holy_stuff),
                 Ok(succession),
             ) => {
-                nft_data.stats = stats.unwrap();
-                nft_data.skills = skills.unwrap();
-                nft_data.training = training.unwrap();
-                nft_data.buildings = buildings.unwrap();
-                nft_data.assets = assets.unwrap();
-                nft_data.potentials = potentials.unwrap();
-                nft_data.holy_stuff = holy_stuff.unwrap();
-                nft_data.sucession = succession.unwrap();
+                nft_data.stats = stats?;
+                nft_data.skills = skills?;
+                nft_data.training = training?;
+                nft_data.buildings = buildings?;
+                nft_data.assets = assets?;
+                nft_data.potentials = potentials?;
+                nft_data.holy_stuff = holy_stuff?;
+                nft_data.sucession = succession?;
             }
             | (Err(err), _, _, _, _, _, _, _)
             | (_, Err(err), _, _, _, _, _, _)
