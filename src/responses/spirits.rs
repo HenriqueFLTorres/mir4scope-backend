@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use crate::utils::object_id;
 use crate::Nft;
-use mongodb::{bson, bson::doc, Collection, Database};
-use serde::{Deserialize, Serialize};
+use mongodb::{ bson, bson::doc, Collection, Database };
+use serde::{ Deserialize, Serialize };
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -15,13 +17,13 @@ pub struct SpiritsResponse {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct SpiritsObject {
-    pub inven: Vec<Spirits>,
-    pub equip: serde_json::Value,
+    pub inven: Vec<Spirit>,
+    pub equip: HashMap<String, HashMap<String, Spirit>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
-pub struct Spirits {
+pub struct Spirit {
     pub transcend: i32,
     pub grade: i32,
     #[serde(alias = "petName")]
@@ -34,7 +36,7 @@ pub async fn get_nft_spirits(
     nft_collection: Collection<Nft>,
     transport_id: serde_json::Value,
     client: reqwest::Client,
-    database: Database,
+    database: Database
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/spirit?transportID={transport_id}&languageCode=en",
@@ -45,8 +47,10 @@ pub async fn get_nft_spirits(
     let response_json: SpiritsResponse = serde_json::from_str(&response)?;
 
     let spirits_collection = database.collection("Spirits");
+    let data_to_db =
+        doc! { "equip": bson::to_bson(&response_json.data.equip)?, "inven": bson::to_bson(&response_json.data.inven)? };
 
-    let record = spirits_collection.insert_one(response_json, None).await?;
+    let record = spirits_collection.insert_one(data_to_db, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
     let update = doc! { "$set": { "spirits_id": record.inserted_id.as_object_id() } };
 

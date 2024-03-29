@@ -179,7 +179,7 @@ async fn retrieve_and_save_nft(
         tokio::spawn(
             get_nft_spirits(
                 nft_collection.clone(),
-                character["seq"].clone(),
+                character["transportID"].clone(),
                 client.clone(),
                 database.clone()
             )
