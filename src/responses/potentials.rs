@@ -1,7 +1,6 @@
 use crate::utils::object_id;
-use crate::Nft;
-use mongodb::{bson, bson::doc, Collection};
-use serde::{Deserialize, Serialize};
+use mongodb::bson::doc;
+use serde::{ Deserialize, Serialize };
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -12,7 +11,7 @@ pub struct PotentialsResponse {
     pub nft_id: mongodb::bson::oid::ObjectId,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct Potentials {
     total: i32,
@@ -30,10 +29,9 @@ pub struct Potentials {
 }
 
 pub async fn get_nft_potentials(
-    nft_collection: Collection<Nft>,
     transport_id: serde_json::Value,
-    client: reqwest::Client,
-) -> anyhow::Result<()> {
+    client: reqwest::Client
+) -> anyhow::Result<Potentials> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/potential?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
@@ -42,10 +40,5 @@ pub async fn get_nft_potentials(
     let response = client.get(request_url).send().await?.text().await?;
     let response_json: PotentialsResponse = serde_json::from_str(&response)?;
 
-    let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
-    let update = doc! { "$set": { "potentials": bson::to_bson(&response_json.data)?} };
-
-    nft_collection.update_one(filter, update, None).await?;
-
-    Ok(())
+    Ok(response_json.data)
 }

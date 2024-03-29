@@ -1,5 +1,4 @@
-use crate::Nft;
-use mongodb::{ bson, bson::doc, Collection };
+use mongodb::bson::doc;
 use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 
@@ -27,10 +26,9 @@ pub struct Stats {
 }
 
 pub async fn get_nft_stats(
-    nft_collection: Collection<Nft>,
     transport_id: serde_json::Value,
-    client: reqwest::Client,
-) -> anyhow::Result<()> {
+    client: reqwest::Client
+) -> anyhow::Result<HashMap<String, String>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/stats?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
@@ -44,10 +42,5 @@ pub async fn get_nft_stats(
         .map(|stats_object| { (stats_object.stat_name.clone(), stats_object.stat_value.clone()) })
         .collect();
 
-    let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
-    let update = doc! { "$set": { "stats": bson::to_bson(&stats_hashmap)? } };
-
-    nft_collection.update_one(filter, update, None).await?;
-
-    Ok(())
+    Ok(stats_hashmap)
 }

@@ -1,5 +1,8 @@
 use mongodb::bson::doc;
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
+
+use super::{ assets::Assets, potentials::Potentials, training::Training, succession::EquipItem };
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -25,4 +28,20 @@ pub struct Nft {
     pub mira_x: u32,
     #[serde(alias = "Reinforce")]
     pub reinforce: u32,
+    #[serde(default)]
+    pub stats: HashMap<String, String>,
+    #[serde(default)]
+    pub skills: HashMap<String, String>,
+    #[serde(default)]
+    pub training: Training,
+    #[serde(default)]
+    pub buildings: HashMap<String, String>,
+    #[serde(default)]
+    pub assets: Assets,
+    #[serde(default)]
+    pub potentials: Potentials,
+    #[serde(default)]
+    pub holy_stuff: HashMap<String, String>,
+    #[serde(default)]
+    pub sucession: EquipItem,
 }
