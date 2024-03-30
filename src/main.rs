@@ -83,11 +83,16 @@ async fn main() -> anyhow::Result<()> {
 
     let now = Instant::now();
 
-    retrieve_and_save_nft(
-        state.nft_collection.to_owned(),
-        state.database.to_owned(),
-        state.client.to_owned()
-    ).await?;
+    let _ = tokio::join!(
+        tokio::spawn(
+            retrieve_and_save_nft(
+                state.nft_collection.to_owned(),
+                state.database.to_owned(),
+                state.client.to_owned(),
+                1
+            )
+        )
+    );
 
     let elapsed = now.elapsed();
     tracing::info!("retrieve_and_save_nft function time: {:#?}", elapsed);
@@ -98,11 +103,12 @@ async fn main() -> anyhow::Result<()> {
 async fn retrieve_and_save_nft(
     nft_collection: Collection<Nft>,
     database: Database,
-    client: reqwest::Client
+    client: reqwest::Client,
+    page_index: i32
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/lists?listType=sale&class=0&levMin=0&levMax=0&powerMin=0&powerMax=0&priceMin=0&priceMax=0&sort=latest&page={page}&languageCode=en",
-        page = 1
+        page = page_index
     );
 
     let response = client.get(request_url).send().await?;
@@ -204,7 +210,7 @@ async fn dump_nft(
         | (_, _, _, _, _, _, _, Err(err)) =>
             tracing::error!("Error joining nft_creation auxiliary tasks {:#?}", err),
     }
-    let nft_record = nft_collection
+    nft_collection
         .insert_one(
             bson::from_document::<Nft>(bson::to_document(&character).unwrap()).unwrap(),
             None
@@ -238,8 +244,7 @@ async fn dump_nft(
                 nft_collection.clone(),
                 character.transport_id,
                 client.clone(),
-                database.clone(),
-                nft_record.inserted_id.as_object_id().unwrap()
+                database.clone()
             )
         )
     );

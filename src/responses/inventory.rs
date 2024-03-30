@@ -1,5 +1,5 @@
-use crate::{ utils::object_id, Nft };
-use mongodb::{ bson::{ self, doc, oid }, Collection, Database };
+use crate::Nft;
+use mongodb::{ bson::{ self, doc }, Collection, Database };
 use serde::{ Deserialize, Serialize };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -7,9 +7,6 @@ use serde::{ Deserialize, Serialize };
 pub struct InventoryResponse {
     #[serde(alias = "data")]
     pub inventory: Vec<InventoryItem>,
-    #[serde(alias = "nftID")]
-    #[serde(default = "object_id")]
-    pub nft_id: mongodb::bson::oid::ObjectId,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -43,8 +40,7 @@ pub async fn get_nft_inventory(
     nft_collection: Collection<Nft>,
     transport_id: u32,
     client: reqwest::Client,
-    database: Database,
-    nft_id: oid::ObjectId
+    database: Database
 ) -> anyhow::Result<Vec<InventoryItem>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/inven?transportID={transport_id}&languageCode=en",
@@ -52,8 +48,7 @@ pub async fn get_nft_inventory(
     );
 
     let response = client.get(request_url).send().await?.text().await?;
-    let mut response_json: InventoryResponse = serde_json::from_str(&response)?;
-    response_json.nft_id = nft_id;
+    let response_json: InventoryResponse = serde_json::from_str(&response)?;
 
     let inventory_collection: mongodb::Collection<InventoryResponse> = database.collection(
         "Inventory"
