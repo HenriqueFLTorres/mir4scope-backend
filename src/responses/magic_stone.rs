@@ -1,10 +1,10 @@
 use super::{
     inventory::InventoryItem,
-    item_detail::{get_item_detail, ItemDetail, ItemDetailAdd},
+    item_detail::{ get_item_detail, ItemDetail, ItemDetailAdd },
 };
 use crate::Nft;
-use mongodb::{bson, bson::doc, Collection, Database};
-use serde::{Deserialize, Serialize};
+use mongodb::{ bson, bson::doc, Collection, Database };
+use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -54,11 +54,11 @@ pub struct MagicStone {
 
 pub async fn get_nft_magic_stone(
     nft_collection: Collection<Nft>,
-    transport_id: serde_json::Value,
-    class: serde_json::Value,
+    transport_id: u32,
+    class: u32,
     client: reqwest::Client,
     database: Database,
-    inventory: Vec<InventoryItem>,
+    inventory: Vec<InventoryItem>
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/magicstone?transportID={transport_id}&languageCode=en",
@@ -80,10 +80,8 @@ pub async fn get_nft_magic_stone(
                 &client,
                 &transport_id,
                 &class,
-                &serde_json::from_str(&item_match.item_uid)?,
-            )
-            .await
-            .expect("Magic stone item detail failed");
+                &item_match.item_uid
+            ).await.expect("Magic stone item detail failed");
 
             stone_value.options = item_detail.options;
             stone_value.add_option = item_detail.add_option;
@@ -95,11 +93,10 @@ pub async fn get_nft_magic_stone(
     }
 
     let magic_stone_collection = database.collection("Magic Stone");
-    let magic_stone_to_db = doc! { "equip_item": bson::to_bson(&magic_stones_decks)?, "active_deck": bson::to_bson(&response_json.data.active_deck)? };
+    let magic_stone_to_db =
+        doc! { "equip_item": bson::to_bson(&magic_stones_decks)?, "active_deck": bson::to_bson(&response_json.data.active_deck)? };
 
-    let record = magic_stone_collection
-        .insert_one(magic_stone_to_db, None)
-        .await?;
+    let record = magic_stone_collection.insert_one(magic_stone_to_db, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
     let update = doc! { "$set": { "magic_stone_id": record.inserted_id.as_object_id() } };
 

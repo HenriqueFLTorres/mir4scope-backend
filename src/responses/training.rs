@@ -55,7 +55,7 @@ pub struct Training {
 }
 
 pub async fn get_nft_training(
-    transport_id: serde_json::Value,
+    transport_id: u32,
     client: reqwest::Client
 ) -> anyhow::Result<Training> {
     let request_url = format!(

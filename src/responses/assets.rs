@@ -36,10 +36,7 @@ pub struct Assets {
     pub dragonsteel: String,
 }
 
-pub async fn get_nft_assets(
-    transport_id: serde_json::Value,
-    client: reqwest::Client
-) -> anyhow::Result<Assets> {
+pub async fn get_nft_assets(transport_id: u32, client: reqwest::Client) -> anyhow::Result<Assets> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/assets?transportID={transport_id}&languageCode=en",
         transport_id = transport_id

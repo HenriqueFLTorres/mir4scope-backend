@@ -29,7 +29,7 @@ pub struct Potentials {
 }
 
 pub async fn get_nft_potentials(
-    transport_id: serde_json::Value,
+    transport_id: u32,
     client: reqwest::Client
 ) -> anyhow::Result<Potentials> {
     let request_url = format!(

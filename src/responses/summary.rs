@@ -1,10 +1,10 @@
-use crate::responses::item_detail::{get_item_detail, ItemDetail};
+use crate::responses::item_detail::{ get_item_detail, ItemDetail };
 use crate::responses::nft::Nft;
-use mongodb::{bson, bson::doc, Collection};
-use serde::{Deserialize, Serialize};
+use mongodb::{ bson, bson::doc, Collection };
+use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 
-use super::{inventory::InventoryItem, item_detail::ItemDetailAdd};
+use super::{ inventory::InventoryItem, item_detail::ItemDetailAdd };
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -54,11 +54,11 @@ pub struct EquipItem {
 
 pub async fn get_nft_summary(
     nft_collection: Collection<Nft>,
-    seq: serde_json::Value,
-    transport_id: serde_json::Value,
-    class: serde_json::Value,
+    seq: u32,
+    transport_id: u32,
+    class: u32,
     client: reqwest::Client,
-    inventory: Vec<InventoryItem>,
+    inventory: Vec<InventoryItem>
 ) -> anyhow::Result<()> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/summary?seq={seq}&languageCode=en",
@@ -78,28 +78,24 @@ pub async fn get_nft_summary(
             &client,
             &transport_id,
             &class,
-            &serde_json::from_str(&item_match.item_uid)?,
-        )
-        .await
-        .expect("item detail failed");
+            &item_match.item_uid
+        ).await.expect("item detail failed");
 
-        response_json
-            .data
-            .equip_items
-            .entry(key.clone())
-            .and_modify(|equip_item| {
-                equip_item["options"] = serde_json::to_value(item_detail.options).unwrap();
-                equip_item["add_option"] = serde_json::to_value(item_detail.add_option).unwrap();
-                equip_item["power_score"] = serde_json::to_value(item_detail.power_score).unwrap();
-            });
-        let equip_object: EquipItem =
-            serde_json::from_value(response_json.data.equip_items[&key].clone())?;
+        response_json.data.equip_items.entry(key.clone()).and_modify(|equip_item| {
+            equip_item["options"] = serde_json::to_value(item_detail.options).unwrap();
+            equip_item["add_option"] = serde_json::to_value(item_detail.add_option).unwrap();
+            equip_item["power_score"] = serde_json::to_value(item_detail.power_score).unwrap();
+        });
+        let equip_object: EquipItem = serde_json::from_value(
+            response_json.data.equip_items[&key].clone()
+        )?;
 
         equip_items.insert(key, equip_object);
     }
 
     let filter = doc! { "seq": bson::to_bson(&seq)? };
-    let update = doc! { "$set": { "trade_type": bson::to_bson(&response_json.data.trade_type)?, "world_name": bson::to_bson(&response_json.data.character.world_name)?, "equip_items": bson::to_bson(&equip_items)? } };
+    let update =
+        doc! { "$set": { "trade_type": bson::to_bson(&response_json.data.trade_type)?, "world_name": bson::to_bson(&response_json.data.character.world_name)?, "equip_items": bson::to_bson(&equip_items)? } };
 
     nft_collection.update_one(filter, update, None).await?;
 

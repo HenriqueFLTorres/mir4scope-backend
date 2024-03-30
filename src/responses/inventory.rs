@@ -1,9 +1,6 @@
-use crate::{utils::object_id, Nft};
-use mongodb::{
-    bson::{self, doc, oid},
-    Collection, Database,
-};
-use serde::{Deserialize, Serialize};
+use crate::{ utils::object_id, Nft };
+use mongodb::{ bson::{ self, doc, oid }, Collection, Database };
+use serde::{ Deserialize, Serialize };
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -44,10 +41,10 @@ pub struct InventoryItem {
 
 pub async fn get_nft_inventory(
     nft_collection: Collection<Nft>,
-    transport_id: serde_json::Value,
+    transport_id: u32,
     client: reqwest::Client,
     database: Database,
-    nft_id: oid::ObjectId,
+    nft_id: oid::ObjectId
 ) -> anyhow::Result<Vec<InventoryItem>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/inven?transportID={transport_id}&languageCode=en",
@@ -58,12 +55,11 @@ pub async fn get_nft_inventory(
     let mut response_json: InventoryResponse = serde_json::from_str(&response)?;
     response_json.nft_id = nft_id;
 
-    let inventory_collection: mongodb::Collection<InventoryResponse> =
-        database.collection("Inventory");
+    let inventory_collection: mongodb::Collection<InventoryResponse> = database.collection(
+        "Inventory"
+    );
 
-    let record = inventory_collection
-        .insert_one(&response_json, None)
-        .await?;
+    let record = inventory_collection.insert_one(&response_json, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
     let update = doc! { "$set": { "inventory_id": record.inserted_id.as_object_id() } };
 

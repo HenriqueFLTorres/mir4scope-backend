@@ -34,7 +34,7 @@ pub struct Spirit {
 
 pub async fn get_nft_spirits(
     nft_collection: Collection<Nft>,
-    transport_id: serde_json::Value,
+    transport_id: u32,
     client: reqwest::Client,
     database: Database
 ) -> anyhow::Result<()> {

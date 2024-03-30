@@ -6,6 +6,16 @@ use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
+pub struct NftListResponse {
+    pub data: NftDataObject,
+}
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
+pub struct NftDataObject {
+    pub lists: Vec<Nft>,
+}
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct Nft {
     pub seq: u32,
     #[serde(alias = "transportID")]

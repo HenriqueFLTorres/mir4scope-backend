@@ -1,7 +1,14 @@
+use std::borrow::BorrowMut;
 use std::env;
 use std::sync::Arc;
 use std::time::Instant;
+use mongodb::bson::Array;
+use responses::nft::NftListResponse;
+use responses::summary::Character;
 use tokio::sync::Mutex;
+use tokio::task::JoinError;
+use tokio::task::spawn;
+use std::future;
 
 use mongodb::bson;
 use mongodb::{
@@ -99,151 +106,196 @@ async fn retrieve_and_save_nft(
     );
 
     let response = client.get(request_url).send().await?;
-    let users: serde_json::Value = response.json().await?;
+    let resonse_json: NftListResponse = response.json().await?;
 
-    let opts = FindOneOptions::builder().skip(2).build();
-    let lists = users["data"]["lists"].clone();
-    let nft_list = match lists {
+    let nft_list = serde_json::to_value(resonse_json.data.lists)?;
+
+    let list = match nft_list {
         serde_json::Value::Array(arr) => arr,
         _ => Vec::new(),
     };
 
-    for character in nft_list {
-        let record = nft_collection.find_one(
-            Some(doc! { "seq": bson::to_bson(&character["seq"])? }),
-            opts.clone()
-        ).await?;
-
-        if record.is_some() {
-            println!(
-                "End of nft dumper, a match was found in the db with the name of {}!",
-                character["characterName"]
-            );
-            break;
-        }
-        println!("Dumping character with the name of {}...", character["characterName"]);
-        let mut nft_data: Nft = serde_json::from_value(character.clone())?;
-
-        let (stats, skills, training, buildings, assets, potentials, holy_stuff, succession) =
-            tokio::join!(
-                tokio::spawn(get_nft_stats(character["transportID"].clone(), client.clone())),
-                tokio::spawn(
-                    get_nft_skills(
-                        character["transportID"].clone(),
-                        character["class"].clone(),
-                        client.clone()
-                    )
-                ),
-                tokio::spawn(get_nft_training(character["transportID"].clone(), client.clone())),
-                tokio::spawn(get_nft_buildings(character["transportID"].clone(), client.clone())),
-                tokio::spawn(get_nft_assets(character["transportID"].clone(), client.clone())),
-                tokio::spawn(get_nft_potentials(character["transportID"].clone(), client.clone())),
-                tokio::spawn(get_nft_holy_stuff(character["transportID"].clone(), client.clone())),
-                tokio::spawn(get_nft_succession(character["transportID"].clone(), client.clone()))
-            );
-
-        match (stats, skills, training, buildings, assets, potentials, holy_stuff, succession) {
-            (
-                Ok(stats),
-                Ok(skills),
-                Ok(training),
-                Ok(buildings),
-                Ok(assets),
-                Ok(potentials),
-                Ok(holy_stuff),
-                Ok(succession),
-            ) => {
-                nft_data.stats = stats?;
-                nft_data.skills = skills?;
-                nft_data.training = training?;
-                nft_data.buildings = buildings?;
-                nft_data.assets = assets?;
-                nft_data.potentials = potentials?;
-                nft_data.holy_stuff = holy_stuff?;
-                nft_data.sucession = succession?;
-            }
-            | (Err(err), _, _, _, _, _, _, _)
-            | (_, Err(err), _, _, _, _, _, _)
-            | (_, _, Err(err), _, _, _, _, _)
-            | (_, _, _, Err(err), _, _, _, _)
-            | (_, _, _, _, Err(err), _, _, _)
-            | (_, _, _, _, _, Err(err), _, _)
-            | (_, _, _, _, _, _, Err(err), _)
-            | (_, _, _, _, _, _, _, Err(err)) =>
-                tracing::error!("Error joining nft_creation auxiliary tasks {:#?}", err),
-        }
-        let nft_record = nft_collection
-            .insert_one(bson::from_document::<Nft>(bson::to_document(&nft_data)?)?, None).await
-            .unwrap();
-
-        tokio::spawn(
-            get_nft_spirits(
-                nft_collection.clone(),
-                character["transportID"].clone(),
-                client.clone(),
-                database.clone()
-            )
-        );
-        tokio::spawn(
-            get_nft_magic_orb(
-                nft_collection.clone(),
-                character["transportID"].clone(),
-                client.clone(),
-                database.clone()
-            )
-        );
-
-        let nft_inventory = tokio::join!(
+    let opts = FindOneOptions::builder().skip(2).build();
+    let tasks: Vec<_> = list
+        .into_iter()
+        .map(|character|
             tokio::spawn(
-                get_nft_inventory(
+                dump_nft(
+                    character,
+                    opts.clone(),
                     nft_collection.clone(),
-                    character["transportID"].clone(),
-                    client.clone(),
                     database.clone(),
-                    nft_record.inserted_id.as_object_id().unwrap()
+                    client.clone()
                 )
             )
-        );
+        )
+        .collect();
 
-        match nft_inventory {
-            (Ok(nft_inv),) => {
-                let inv = Arc::new(nft_inv.unwrap());
-
-                tokio::spawn(
-                    get_nft_summary(
-                        nft_collection.clone(),
-                        character["seq"].clone(),
-                        character["transportID"].clone(),
-                        character["class"].clone(),
-                        client.clone(),
-                        inv.clone().to_vec()
-                    )
-                );
-                tokio::spawn(
-                    get_nft_magic_stone(
-                        nft_collection.clone(),
-                        character["transportID"].clone(),
-                        character["class"].clone(),
-                        client.clone(),
-                        database.clone(),
-                        inv.clone().to_vec()
-                    )
-                );
-                tokio::spawn(
-                    get_nft_mystical_piece(
-                        nft_collection.clone(),
-                        character["transportID"].clone(),
-                        character["class"].clone(),
-                        client.clone(),
-                        database.clone(),
-                        inv.clone().to_vec()
-                    )
-                );
-            }
-            (Err(err),) => tracing::error!("Error joining task `nft_inventory` {:#?}", err),
-        }
+    for task in tasks {
+        match task.await.unwrap() {
+            Ok(f) => f,
+            Err(error) => tracing::error!("Error dumping nft: {:#?}", error),
+        };
     }
-    tokio::time::sleep(std::time::Duration::from_secs(60)).await; // wait to all running tasks
 
     Ok(())
+}
+
+async fn dump_nft(
+    nft_data: serde_json::Value,
+    opts: FindOneOptions,
+    nft_collection: Collection<Nft>,
+    database: Database,
+    client: reqwest::Client
+) -> Result<(), JoinError> {
+    let mut character: Nft = serde_json::from_value(nft_data.clone()).unwrap();
+    let record = nft_collection
+        .find_one(Some(doc! { "seq": bson::to_bson(&character.seq).unwrap() }), opts.clone()).await
+        .unwrap();
+
+    if record.is_some() {
+        println!(
+            "End of nft dumper, a match was found in the db with the name of {}!",
+            character.character_name
+        );
+    }
+
+    println!("Dumping character with the name of {}...", character.character_name);
+
+    let (stats, skills, training, buildings, assets, potentials, holy_stuff, succession) =
+        tokio::join!(
+            tokio::spawn(get_nft_stats(character.transport_id, client.clone())),
+            tokio::spawn(get_nft_skills(character.transport_id, character.class, client.clone())),
+            tokio::spawn(get_nft_training(character.transport_id, client.clone())),
+            tokio::spawn(get_nft_buildings(character.transport_id, client.clone())),
+            tokio::spawn(get_nft_assets(character.transport_id, client.clone())),
+            tokio::spawn(get_nft_potentials(character.transport_id, client.clone())),
+            tokio::spawn(get_nft_holy_stuff(character.transport_id, client.clone())),
+            tokio::spawn(get_nft_succession(character.transport_id, client.clone()))
+        );
+
+    match (stats, skills, training, buildings, assets, potentials, holy_stuff, succession) {
+        (
+            Ok(stats),
+            Ok(skills),
+            Ok(training),
+            Ok(buildings),
+            Ok(assets),
+            Ok(potentials),
+            Ok(holy_stuff),
+            Ok(succession),
+        ) => {
+            character.stats = stats.unwrap();
+            character.skills = skills.unwrap();
+            character.training = training.unwrap();
+            character.buildings = buildings.unwrap();
+            character.assets = assets.unwrap();
+            character.potentials = potentials.unwrap();
+            character.holy_stuff = holy_stuff.unwrap();
+            character.sucession = succession.unwrap();
+        }
+        | (Err(err), _, _, _, _, _, _, _)
+        | (_, Err(err), _, _, _, _, _, _)
+        | (_, _, Err(err), _, _, _, _, _)
+        | (_, _, _, Err(err), _, _, _, _)
+        | (_, _, _, _, Err(err), _, _, _)
+        | (_, _, _, _, _, Err(err), _, _)
+        | (_, _, _, _, _, _, Err(err), _)
+        | (_, _, _, _, _, _, _, Err(err)) =>
+            tracing::error!("Error joining nft_creation auxiliary tasks {:#?}", err),
+    }
+    let nft_record = nft_collection
+        .insert_one(
+            bson::from_document::<Nft>(bson::to_document(&character).unwrap()).unwrap(),
+            None
+        ).await
+        .unwrap();
+
+    let _ = tokio
+        ::spawn(
+            get_nft_spirits(
+                nft_collection.clone(),
+                character.transport_id,
+                client.clone(),
+                database.clone()
+            )
+        ).await
+        .unwrap();
+    let _ = tokio
+        ::spawn(
+            get_nft_magic_orb(
+                nft_collection.clone(),
+                character.transport_id,
+                client.clone(),
+                database.clone()
+            )
+        ).await
+        .unwrap();
+
+    let nft_inventory = tokio::join!(
+        tokio::spawn(
+            get_nft_inventory(
+                nft_collection.clone(),
+                character.transport_id,
+                client.clone(),
+                database.clone(),
+                nft_record.inserted_id.as_object_id().unwrap()
+            )
+        )
+    );
+
+    match nft_inventory {
+        (Ok(nft_inv),) => {
+            let inv = Arc::new(nft_inv.unwrap());
+
+            let _ = tokio
+                ::spawn(
+                    get_nft_summary(
+                        nft_collection.clone(),
+                        character.seq,
+                        character.transport_id,
+                        character.class,
+                        client.clone(),
+                        inv.clone().to_vec()
+                    )
+                ).await
+                .unwrap();
+            let _ = tokio
+                ::spawn(
+                    get_nft_magic_stone(
+                        nft_collection.clone(),
+                        character.transport_id,
+                        character.class,
+                        client.clone(),
+                        database.clone(),
+                        inv.clone().to_vec()
+                    )
+                ).await
+                .unwrap();
+            let _ = tokio
+                ::spawn(
+                    get_nft_mystical_piece(
+                        nft_collection.clone(),
+                        character.transport_id,
+                        character.class,
+                        client.clone(),
+                        database.clone(),
+                        inv.clone().to_vec()
+                    )
+                ).await
+                .unwrap();
+
+            Ok(())
+        }
+        (Err(err),) => {
+            tracing::error!(
+                "Error joining task `nft_inventory` (seq: {:#?}, transport_id: {:#?}, name: {:#?}): {:#?}",
+                character.seq,
+                character.transport_id,
+                character.character_name,
+                err
+            );
+            Ok(())
+        }
+    }
 }

@@ -44,7 +44,7 @@ pub struct SuccessionObject {
 }
 
 pub async fn get_nft_succession(
-    transport_id: serde_json::Value,
+    transport_id: u32,
     client: reqwest::Client
 ) -> anyhow::Result<EquipItem> {
     let request_url = format!(

@@ -17,7 +17,7 @@ pub struct BuildingObject {
 }
 
 pub async fn get_nft_buildings(
-    transport_id: serde_json::Value,
+    transport_id: u32,
     client: reqwest::Client
 ) -> anyhow::Result<HashMap<String, String>> {
     let request_url = format!(

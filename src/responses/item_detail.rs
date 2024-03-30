@@ -52,9 +52,9 @@ where
 
 pub async fn get_item_detail(
     client: &reqwest::Client,
-    transport_id: &serde_json::Value,
-    class: &serde_json::Value,
-    item_uid: &serde_json::Value,
+    transport_id: &u32,
+    class: &u32,
+    item_uid: &String,
 ) -> anyhow::Result<ItemDetailData> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/itemdetail?transportID={transport_id}&class={class}&itemUID={item_uid}&languageCode=en",

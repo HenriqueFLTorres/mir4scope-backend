@@ -24,8 +24,8 @@ pub struct Skills {
 }
 
 pub async fn get_nft_skills(
-    transport_id: serde_json::Value,
-    character_class: serde_json::Value,
+    transport_id: u32,
+    character_class: u32,
     client: reqwest::Client
 ) -> anyhow::Result<HashMap<String, String>> {
     let request_url = format!(
