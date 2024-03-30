@@ -1,5 +1,5 @@
 use mongodb::bson::doc;
-use serde::{ Deserialize, Serialize, Serializer };
+use serde::{ Deserialize, Deserializer, Serialize };
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -7,20 +7,17 @@ pub struct HolyStuffResponse {
     pub data: HashMap<String, HolyStuffObject>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HolyStuffObject {
     #[serde(alias = "HolyStuffName")]
     pub holy_stuff_name: String,
-    #[serde(alias = "Grade", serialize_with = "serialize_grade_value")]
+    #[serde(alias = "Grade", deserialize_with = "parse_grade_value")]
     pub grade: String,
 }
 
-fn serialize_grade_value<S>(grade: &String, serializer: S) -> Result<S::Ok, S::Error>
-    where S: Serializer
-{
-    if grade.is_empty() { serializer.serialize_str("0") } else { serializer.serialize_str(grade) }
+fn parse_grade_value<'de, D>(d: D) -> Result<String, D::Error> where D: Deserializer<'de> {
+    Deserialize::deserialize(d).map(|x: Option<_>| { x.unwrap_or("0".to_string()) })
 }
-
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct HolyStuff {
