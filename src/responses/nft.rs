@@ -1,7 +1,13 @@
 use mongodb::bson::doc;
 use serde::{ Deserialize, Serialize };
 
-use super::{ assets::Assets, potentials::Potentials, training::Training, succession::EquipItem };
+use super::{
+    assets::Assets,
+    codex::Codex,
+    potentials::Potentials,
+    succession::EquipItem,
+    training::Training,
+};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -54,4 +60,6 @@ pub struct Nft {
     pub holy_stuff: HashMap<String, String>,
     #[serde(default)]
     pub sucession: EquipItem,
+    #[serde(default)]
+    pub codex: HashMap<String, Codex>,
 }

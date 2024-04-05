@@ -1,14 +1,9 @@
-use std::borrow::BorrowMut;
 use std::env;
 use std::sync::Arc;
 use std::time::Instant;
-use mongodb::bson::Array;
 use responses::nft::NftListResponse;
-use responses::summary::Character;
 use tokio::sync::Mutex;
 use tokio::task::JoinError;
-use tokio::task::spawn;
-use std::future;
 
 use mongodb::bson;
 use mongodb::{
@@ -20,6 +15,7 @@ use mongodb::{
 };
 use utils::State;
 
+use crate::responses::codex::get_nft_codex;
 use crate::responses::{
     assets::get_nft_assets,
     building::get_nft_buildings,
@@ -168,7 +164,7 @@ async fn dump_nft(
 
     println!("Dumping character with the name of {}...", character.character_name);
 
-    let (stats, skills, training, buildings, assets, potentials, holy_stuff, succession) =
+    let (stats, skills, training, buildings, assets, potentials, holy_stuff, succession, codex) =
         tokio::join!(
             tokio::spawn(get_nft_stats(character.transport_id, client.clone())),
             tokio::spawn(get_nft_skills(character.transport_id, character.class, client.clone())),
@@ -177,10 +173,11 @@ async fn dump_nft(
             tokio::spawn(get_nft_assets(character.transport_id, client.clone())),
             tokio::spawn(get_nft_potentials(character.transport_id, client.clone())),
             tokio::spawn(get_nft_holy_stuff(character.transport_id, client.clone())),
-            tokio::spawn(get_nft_succession(character.transport_id, client.clone()))
+            tokio::spawn(get_nft_succession(character.transport_id, client.clone())),
+            tokio::spawn(get_nft_codex(character.transport_id, client.clone()))
         );
 
-    match (stats, skills, training, buildings, assets, potentials, holy_stuff, succession) {
+    match (stats, skills, training, buildings, assets, potentials, holy_stuff, succession, codex) {
         (
             Ok(stats),
             Ok(skills),
@@ -190,6 +187,7 @@ async fn dump_nft(
             Ok(potentials),
             Ok(holy_stuff),
             Ok(succession),
+            Ok(codex),
         ) => {
             character.stats = stats.unwrap();
             character.skills = skills.unwrap();
@@ -199,15 +197,17 @@ async fn dump_nft(
             character.potentials = potentials.unwrap();
             character.holy_stuff = holy_stuff.unwrap();
             character.sucession = succession.unwrap();
+            character.codex = codex.unwrap();
         }
-        | (Err(err), _, _, _, _, _, _, _)
-        | (_, Err(err), _, _, _, _, _, _)
-        | (_, _, Err(err), _, _, _, _, _)
-        | (_, _, _, Err(err), _, _, _, _)
-        | (_, _, _, _, Err(err), _, _, _)
-        | (_, _, _, _, _, Err(err), _, _)
-        | (_, _, _, _, _, _, Err(err), _)
-        | (_, _, _, _, _, _, _, Err(err)) =>
+        | (Err(err), _, _, _, _, _, _, _, _)
+        | (_, Err(err), _, _, _, _, _, _, _)
+        | (_, _, Err(err), _, _, _, _, _, _)
+        | (_, _, _, Err(err), _, _, _, _, _)
+        | (_, _, _, _, Err(err), _, _, _, _)
+        | (_, _, _, _, _, Err(err), _, _, _)
+        | (_, _, _, _, _, _, Err(err), _, _)
+        | (_, _, _, _, _, _, _, Err(err), _)
+        | (_, _, _, _, _, _, _, _, Err(err)) =>
             tracing::error!("Error joining nft_creation auxiliary tasks {:#?}", err),
     }
     nft_collection

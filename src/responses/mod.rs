@@ -1,5 +1,6 @@
 pub mod assets;
 pub mod building;
+pub mod codex;
 pub mod holy_stuff;
 pub mod inventory;
 pub mod item_detail;
