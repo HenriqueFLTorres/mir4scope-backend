@@ -56,7 +56,7 @@ pub async fn get_nft_magic_orb(
     let response = client.get(request_url).send().await?.text().await?;
     let response_json: MagicOrbResponse = serde_json::from_str(&response)?;
 
-    let magic_orb_collection = database.collection("Magic Orb");
+    let magic_orb_collection = database.collection("magic_orb");
 
     let record = magic_orb_collection.insert_one(response_json.data, None).await?;
     let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };

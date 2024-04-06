@@ -46,7 +46,7 @@ pub async fn get_nft_spirits(
     let response = client.get(request_url).send().await?.text().await?;
     let response_json: SpiritsResponse = serde_json::from_str(&response)?;
 
-    let spirits_collection = database.collection("Spirits");
+    let spirits_collection = database.collection("spirits");
     let data_to_db =
         doc! { "equip": bson::to_bson(&response_json.data.equip)?, "inven": bson::to_bson(&response_json.data.inven)? };
 

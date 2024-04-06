@@ -92,7 +92,7 @@ pub async fn get_nft_magic_stone(
         magic_stones_decks.insert(set_index, magic_stones);
     }
 
-    let magic_stone_collection = database.collection("Magic Stone");
+    let magic_stone_collection = database.collection("magic_stone");
     let magic_stone_to_db =
         doc! { "equip_item": bson::to_bson(&magic_stones_decks)?, "active_deck": bson::to_bson(&response_json.data.active_deck)? };
 

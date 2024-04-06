@@ -51,7 +51,7 @@ pub async fn get_nft_inventory(
     let response_json: InventoryResponse = serde_json::from_str(&response)?;
 
     let inventory_collection: mongodb::Collection<InventoryResponse> = database.collection(
-        "Inventory"
+        "inventory"
     );
 
     let record = inventory_collection.insert_one(&response_json, None).await?;

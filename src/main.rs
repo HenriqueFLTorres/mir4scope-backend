@@ -69,7 +69,7 @@ async fn main() -> anyhow::Result<()> {
 
     let binding = Arc::new(
         Mutex::new(State {
-            nft_collection: database.collection("Nft"),
+            nft_collection: database.collection("nft"),
             database,
             client: reqwest::Client::builder().user_agent(APP_USER_AGENT).build()?,
         })

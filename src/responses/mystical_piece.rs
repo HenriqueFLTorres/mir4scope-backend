@@ -93,7 +93,7 @@ pub async fn get_nft_mystical_piece(
         mystical_pieces_decks.insert(set_index, mystical_pieces);
     }
 
-    let mystical_piece_collection = database.collection("Mystical Piece");
+    let mystical_piece_collection = database.collection("mystical_piece");
     let mystical_piece_to_db =
         doc! { "equip_item": bson::to_bson(&mystical_pieces_decks)?, "active_deck": bson::to_bson(&response_json.data.active_deck)? };
 
