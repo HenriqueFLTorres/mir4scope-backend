@@ -196,7 +196,7 @@ async fn dump_nft(
             character.assets = assets.unwrap();
             character.potentials = potentials.unwrap();
             character.holy_stuff = holy_stuff.unwrap();
-            character.sucession = succession.unwrap();
+            character.succession = succession.unwrap();
             character.codex = codex.unwrap();
         }
         | (Err(err), _, _, _, _, _, _, _, _)
