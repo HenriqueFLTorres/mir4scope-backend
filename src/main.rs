@@ -47,7 +47,7 @@ async fn main() -> anyhow::Result<()> {
     let subscriber = tracing_subscriber
         ::fmt()
         .pretty()
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::ERROR)
         .finish();
     tracing::subscriber
         ::set_global_default(subscriber)
@@ -164,7 +164,7 @@ async fn dump_nft(
 
     println!("Dumping character with the name of {}...", character.character_name);
 
-    let (stats, skills, training, buildings, assets, potentials, holy_stuff, succession, codex) =
+    let (stats, skills, training, buildings, assets, potentials, holy_stuff, codex) =
         tokio::join!(
             tokio::spawn(get_nft_stats(character.transport_id, client.clone())),
             tokio::spawn(get_nft_skills(character.transport_id, character.class, client.clone())),
@@ -173,11 +173,10 @@ async fn dump_nft(
             tokio::spawn(get_nft_assets(character.transport_id, client.clone())),
             tokio::spawn(get_nft_potentials(character.transport_id, client.clone())),
             tokio::spawn(get_nft_holy_stuff(character.transport_id, client.clone())),
-            tokio::spawn(get_nft_succession(character.transport_id, client.clone())),
             tokio::spawn(get_nft_codex(character.transport_id, client.clone()))
         );
 
-    match (stats, skills, training, buildings, assets, potentials, holy_stuff, succession, codex) {
+    match (stats, skills, training, buildings, assets, potentials, holy_stuff, codex) {
         (
             Ok(stats),
             Ok(skills),
@@ -186,7 +185,6 @@ async fn dump_nft(
             Ok(assets),
             Ok(potentials),
             Ok(holy_stuff),
-            Ok(succession),
             Ok(codex),
         ) => {
             character.stats = stats.unwrap();
@@ -196,18 +194,16 @@ async fn dump_nft(
             character.assets = assets.unwrap();
             character.potentials = potentials.unwrap();
             character.holy_stuff = holy_stuff.unwrap();
-            character.succession = succession.unwrap();
             character.codex = codex.unwrap();
         }
-        | (Err(err), _, _, _, _, _, _, _, _)
-        | (_, Err(err), _, _, _, _, _, _, _)
-        | (_, _, Err(err), _, _, _, _, _, _)
-        | (_, _, _, Err(err), _, _, _, _, _)
-        | (_, _, _, _, Err(err), _, _, _, _)
-        | (_, _, _, _, _, Err(err), _, _, _)
-        | (_, _, _, _, _, _, Err(err), _, _)
-        | (_, _, _, _, _, _, _, Err(err), _)
-        | (_, _, _, _, _, _, _, _, Err(err)) =>
+        | (Err(err), _, _, _, _, _, _, _)
+        | (_, Err(err), _, _, _, _, _, _)
+        | (_, _, Err(err), _, _, _, _, _)
+        | (_, _, _, Err(err), _, _, _, _)
+        | (_, _, _, _, Err(err), _, _, _)
+        | (_, _, _, _, _, Err(err), _, _)
+        | (_, _, _, _, _, _, Err(err), _)
+        | (_, _, _, _, _, _, _, Err(err)) =>
             tracing::error!("Error joining nft_creation auxiliary tasks {:#?}", err),
     }
     nft_collection
@@ -280,6 +276,18 @@ async fn dump_nft(
             let _ = tokio
                 ::spawn(
                     get_nft_mystical_piece(
+                        nft_collection.clone(),
+                        character.transport_id,
+                        character.class,
+                        client.clone(),
+                        database.clone(),
+                        inv.clone().to_vec()
+                    )
+                ).await
+                .expect("Failed to get mystical piece");
+            let _ = tokio
+                ::spawn(
+                    get_nft_succession(
                         nft_collection.clone(),
                         character.transport_id,
                         character.class,

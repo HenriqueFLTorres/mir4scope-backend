@@ -75,8 +75,10 @@ pub async fn get_nft_mystical_piece(
         for (slot_index, mut piece_value) in inner_hashmap.clone().into_iter() {
             let item_match = inventory
                 .iter()
-                .find(|inventory_item| inventory_item.item_id == piece_value.item_idx)
-                .expect("Mystical Piece not found in inventory.");
+                .filter(|inventory_item| inventory_item.item_id == piece_value.item_idx)
+                .next()
+                .expect(format!("Mystical piece: {:#?} failed,\ntransport_id: {:#?}", piece_value, transport_id).as_str());
+
             let item_detail = get_item_detail(
                 &client,
                 &transport_id,
@@ -84,13 +86,13 @@ pub async fn get_nft_mystical_piece(
                 &item_match.item_uid
             ).await.expect("Mystical Piece item detail failed");
 
-            piece_value.options = item_detail.options;
-            piece_value.add_option = item_detail.add_option;
-            piece_value.power_score = item_detail.power_score;
+            piece_value.options = item_detail.options.clone();
+            piece_value.add_option = item_detail.add_option.clone();
+            piece_value.power_score = item_detail.power_score.clone();
 
             mystical_pieces.insert(slot_index, piece_value);
         }
-        mystical_pieces_decks.insert(set_index, mystical_pieces);
+        mystical_pieces_decks.insert(set_index, mystical_pieces.clone());
     }
 
     let mystical_piece_collection = database.collection("mystical_piece");

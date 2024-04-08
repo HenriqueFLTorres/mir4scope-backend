@@ -7,6 +7,8 @@ use serde::{ Deserialize, Serialize };
 pub struct InventoryResponse {
     #[serde(alias = "data")]
     pub inventory: Vec<InventoryItem>,
+    #[serde(default)]
+    pub transport_id: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -48,7 +50,9 @@ pub async fn get_nft_inventory(
     );
 
     let response = client.get(request_url).send().await?.text().await?;
-    let response_json: InventoryResponse = serde_json::from_str(&response)?;
+    let mut response_json: InventoryResponse = serde_json::from_str(&response)?;
+
+    response_json.transport_id = transport_id;
 
     let inventory_collection: mongodb::Collection<InventoryResponse> = database.collection(
         "inventory"

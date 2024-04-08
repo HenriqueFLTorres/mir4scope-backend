@@ -59,7 +59,5 @@ pub struct Nft {
     #[serde(default)]
     pub holy_stuff: HashMap<String, String>,
     #[serde(default)]
-    pub succession: EquipItem,
-    #[serde(default)]
     pub codex: HashMap<String, Codex>,
 }
