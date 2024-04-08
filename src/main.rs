@@ -79,6 +79,14 @@ async fn main() -> anyhow::Result<()> {
 
     let now = Instant::now();
 
+    state.database.collection::<mongodb::Database>("nft").drop(None).await?;
+    state.database.collection::<mongodb::Database>("inventory").drop(None).await?;
+    state.database.collection::<mongodb::Database>("magic_orb").drop(None).await?;
+    state.database.collection::<mongodb::Database>("mystical_piece").drop(None).await?;
+    state.database.collection::<mongodb::Database>("magic_stone").drop(None).await?;
+    state.database.collection::<mongodb::Database>("spirits").drop(None).await?;
+    state.database.collection::<mongodb::Database>("succession").drop(None).await?;
+
     let _ = tokio::join!(
         tokio::spawn(
             retrieve_and_save_nft(
@@ -164,17 +172,16 @@ async fn dump_nft(
 
     println!("Dumping character with the name of {}...", character.character_name);
 
-    let (stats, skills, training, buildings, assets, potentials, holy_stuff, codex) =
-        tokio::join!(
-            tokio::spawn(get_nft_stats(character.transport_id, client.clone())),
-            tokio::spawn(get_nft_skills(character.transport_id, character.class, client.clone())),
-            tokio::spawn(get_nft_training(character.transport_id, client.clone())),
-            tokio::spawn(get_nft_buildings(character.transport_id, client.clone())),
-            tokio::spawn(get_nft_assets(character.transport_id, client.clone())),
-            tokio::spawn(get_nft_potentials(character.transport_id, client.clone())),
-            tokio::spawn(get_nft_holy_stuff(character.transport_id, client.clone())),
-            tokio::spawn(get_nft_codex(character.transport_id, client.clone()))
-        );
+    let (stats, skills, training, buildings, assets, potentials, holy_stuff, codex) = tokio::join!(
+        tokio::spawn(get_nft_stats(character.transport_id, client.clone())),
+        tokio::spawn(get_nft_skills(character.transport_id, character.class, client.clone())),
+        tokio::spawn(get_nft_training(character.transport_id, client.clone())),
+        tokio::spawn(get_nft_buildings(character.transport_id, client.clone())),
+        tokio::spawn(get_nft_assets(character.transport_id, client.clone())),
+        tokio::spawn(get_nft_potentials(character.transport_id, client.clone())),
+        tokio::spawn(get_nft_holy_stuff(character.transport_id, client.clone())),
+        tokio::spawn(get_nft_codex(character.transport_id, client.clone()))
+    );
 
     match (stats, skills, training, buildings, assets, potentials, holy_stuff, codex) {
         (
