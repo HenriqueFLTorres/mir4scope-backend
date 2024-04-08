@@ -1,9 +1,9 @@
 use mongodb::bson::doc;
-use serde::{ Deserialize, Serialize };
+use serde::{ Deserialize, Deserializer, Serialize };
 
 use super::{
     assets::Assets,
-    codex::Codex,
+    codex::{Codex, CodexResponse},
     potentials::Potentials,
     succession::EquipItem,
     training::Training,
@@ -59,5 +59,5 @@ pub struct Nft {
     #[serde(default)]
     pub holy_stuff: HashMap<String, String>,
     #[serde(default)]
-    pub codex: HashMap<String, Codex>,
+    pub codex: CodexResponse,
 }

@@ -85,7 +85,7 @@ async fn main() -> anyhow::Result<()> {
                 state.nft_collection.to_owned(),
                 state.database.to_owned(),
                 state.client.to_owned(),
-                1
+                8
             )
         )
     );
