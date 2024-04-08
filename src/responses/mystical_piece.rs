@@ -76,13 +76,13 @@ pub async fn get_nft_mystical_piece(
             let item_match = inventory
                 .iter()
                 .find(|inventory_item| inventory_item.item_id == piece_value.item_idx)
-                .expect("Magic stone not found in inventory.");
+                .expect("Mystical Piece not found in inventory.");
             let item_detail = get_item_detail(
                 &client,
                 &transport_id,
                 &class,
                 &item_match.item_uid
-            ).await.expect("Magic stone item detail failed");
+            ).await.expect("Mystical Piece item detail failed");
 
             piece_value.options = item_detail.options;
             piece_value.add_option = item_detail.add_option;
