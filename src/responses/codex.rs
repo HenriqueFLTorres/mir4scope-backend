@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use mongodb::bson::doc;
-use serde::{ Deserialize, Deserializer, Serialize, Serializer };
+use serde::{ Deserialize, Serialize };
+
+use crate::responses;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
@@ -19,22 +21,28 @@ pub struct Codex {
     #[serde(alias = "codexName")]
     pub codex_name: String,
     #[serde(alias = "totalCount")]
-    #[serde(deserialize_with = "string_to_u32", serialize_with = "u32_to_string")]
-    pub total_count: u32,
-    #[serde(deserialize_with = "string_to_u32", serialize_with = "u32_to_string")]
-    pub completed: u32,
+    pub total_count: StringOrU32,
+    pub completed: StringOrU32,
     #[serde(alias = "inprogress")]
-    #[serde(deserialize_with = "string_to_u32", serialize_with = "u32_to_string")]
-    pub in_progress: u32,
+    pub in_progress: StringOrU32,
+    #[serde(default)]
+    pub pinto: u32,
 }
 
-pub fn string_to_u32<'de, D>(deserializer: D) -> Result<u32, D::Error> where D: Deserializer<'de> {
-    let s: String = Deserialize::deserialize(deserializer)?;
-    s.parse::<u32>().map_err(serde::de::Error::custom)
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum StringOrU32 {
+    String(String),
+    Integer(u32),
 }
 
-pub fn u32_to_string<S>(value: &u32, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-    serializer.serialize_str(&value.to_string())
+impl StringOrU32 {
+    pub fn as_u32(&self) -> Option<u32> {
+        match self {
+            StringOrU32::Integer(num) => Some(*num),
+            StringOrU32::String(s) => s.parse().ok(),
+        }
+    }
 }
 
 pub async fn get_nft_codex(
@@ -51,9 +59,16 @@ pub async fn get_nft_codex(
 
     let mut in_progress_total = 0;
     let mut completed_total = 0;
-    response_json.data.iter().for_each(|(key, codex)| {
-        in_progress_total += codex.in_progress;
-        completed_total += codex.completed;
+    response_json.data.iter_mut().for_each(|(_, codex)| {
+        let in_progress_int: u32 = codex.in_progress.as_u32().unwrap();
+        let completed_int: u32 = codex.completed.as_u32().unwrap();
+        let total_count_int: u32 = codex.total_count.as_u32().unwrap();
+
+        in_progress_total += in_progress_int;
+        completed_total += completed_int;
+        codex.in_progress = responses::codex::StringOrU32::Integer(in_progress_int);
+        codex.completed = responses::codex::StringOrU32::Integer(completed_int);
+        codex.total_count = responses::codex::StringOrU32::Integer(total_count_int);
     });
 
     response_json.in_progress = in_progress_total;
