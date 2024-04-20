@@ -1,18 +1,14 @@
-use crate::utils::object_id;
-use mongodb::bson::doc;
+use reqwest_middleware::ClientWithMiddleware;
 use serde::{ Deserialize, Serialize };
 
+use crate::utils::get_response;
+
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct PotentialsResponse {
     pub data: Potentials,
-    #[serde(alias = "nftID")]
-    #[serde(default = "object_id")]
-    pub nft_id: mongodb::bson::oid::ObjectId,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct Potentials {
     total: i32,
     #[serde(alias = "totalMax")]
@@ -29,16 +25,15 @@ pub struct Potentials {
 }
 
 pub async fn get_nft_potentials(
-    transport_id: u32,
-    client: reqwest::Client
+    transport_id: i32,
+    client: ClientWithMiddleware
 ) -> anyhow::Result<Potentials> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/potential?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
     );
 
-    let response = client.get(request_url).send().await?.text().await?;
-    let response_json: PotentialsResponse = serde_json::from_str(&response)?;
+    let response_json: PotentialsResponse = get_response(&client, request_url).await?;
 
     Ok(response_json.data)
 }

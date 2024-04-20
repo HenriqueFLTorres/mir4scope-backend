@@ -1,11 +1,12 @@
-use crate::Nft;
-use mongodb::{ bson, bson::doc, Collection, Database };
+use reqwest_middleware::ClientWithMiddleware;
 use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 
+use crate::utils::get_response;
+
 use super::{
     inventory::InventoryItem,
-    item_detail::{ get_item_detail, ItemDetail, ItemDetailAdd },
+    item_detail::{ self, get_item_detail, ItemDetail, ItemDetailAdd, ItemDetailData },
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -20,7 +21,7 @@ pub struct MysticalPieceResponseObject {
     #[serde(alias = "equipItem")]
     pub equip_item: HashMap<String, HashMap<String, MysticalPiece>>,
     #[serde(alias = "activeDeck")]
-    pub active_deck: u8,
+    pub active_deck: i16,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -46,7 +47,7 @@ pub struct MysticalPiece {
     #[serde(alias = "itemPath")]
     pub item_path: String,
     #[serde(alias = "powerScore", default)]
-    pub power_score: u32,
+    pub power_score: i32,
     #[serde(default)]
     pub options: Vec<ItemDetail>,
     #[serde(alias = "addOptions", default)]
@@ -54,20 +55,17 @@ pub struct MysticalPiece {
 }
 
 pub async fn get_nft_mystical_piece(
-    nft_collection: Collection<Nft>,
-    transport_id: u32,
-    class: u32,
-    client: reqwest::Client,
-    database: Database,
+    transport_id: i32,
+    class: i32,
+    client: ClientWithMiddleware,
     inventory: Vec<InventoryItem>
-) -> anyhow::Result<()> {
+) -> anyhow::Result<MysticalPieceResponseObject> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/mysticalpiece?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
     );
 
-    let response = client.get(request_url).send().await?.text().await?;
-    let response_json: MysticalPieceResponse = serde_json::from_str(&response)?;
+    let response_json: MysticalPieceResponse = get_response(&client, request_url).await?;
 
     let mut mystical_pieces_decks: HashMap<String, HashMap<String, MysticalPiece>> = HashMap::new();
     for (set_index, inner_hashmap) in response_json.data.equip_item.clone().into_iter() {
@@ -75,33 +73,35 @@ pub async fn get_nft_mystical_piece(
         for (slot_index, mut piece_value) in inner_hashmap.clone().into_iter() {
             let item_match = inventory
                 .iter()
-                .find(|inventory_item| inventory_item.item_id == piece_value.item_idx)
-                .expect("Magic stone not found in inventory.");
-            let item_detail = get_item_detail(
-                &client,
-                &transport_id,
-                &class,
-                &item_match.item_uid
-            ).await.expect("Magic stone item detail failed");
+                .find(|inventory_item| inventory_item.item_id == piece_value.item_idx);
 
-            piece_value.options = item_detail.options;
-            piece_value.add_option = item_detail.add_option;
-            piece_value.power_score = item_detail.power_score;
+            if item_match.is_some() {
+                let item_detail = get_item_detail(
+                    &client,
+                    &transport_id,
+                    &class,
+                    &item_match.unwrap().item_uid
+                ).await.expect("Mystical piece item detail failed");
+
+                piece_value.options = item_detail.options;
+                piece_value.add_option = item_detail.add_option;
+                piece_value.power_score = item_detail.power_score;
+            } else {
+                println!("Inventory mystical piece item match not found");
+                piece_value.options = Vec::new();
+                piece_value.add_option = Vec::new();
+                piece_value.power_score = 0;
+            }
 
             mystical_pieces.insert(slot_index, piece_value);
         }
         mystical_pieces_decks.insert(set_index, mystical_pieces);
     }
 
-    let mystical_piece_collection = database.collection("mystical_piece");
-    let mystical_piece_to_db =
-        doc! { "equip_item": bson::to_bson(&mystical_pieces_decks)?, "active_deck": bson::to_bson(&response_json.data.active_deck)? };
+    let mystical_piece_result = MysticalPieceResponseObject {
+        equip_item: mystical_pieces_decks,
+        active_deck: response_json.data.active_deck,
+    };
 
-    let record = mystical_piece_collection.insert_one(mystical_piece_to_db, None).await?;
-    let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
-    let update = doc! { "$set": { "mystical_piece_id": record.inserted_id.as_object_id() } };
-
-    nft_collection.update_one(filter, update, None).await?;
-
-    Ok(())
+    Ok(mystical_piece_result)
 }

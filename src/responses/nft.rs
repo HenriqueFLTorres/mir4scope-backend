@@ -1,49 +1,51 @@
-use mongodb::bson::doc;
 use serde::{ Deserialize, Serialize };
 
 use super::{
     assets::Assets,
-    codex::Codex,
+    codex::CodexResponse,
     potentials::Potentials,
-    succession::EquipItem,
+    summary::EquipItem,
     training::Training,
 };
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct NftListResponse {
     pub data: NftDataObject,
 }
+
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct NftDataObject {
     pub lists: Vec<Nft>,
 }
+
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct Nft {
-    pub seq: u32,
+    pub seq: i32,
     #[serde(alias = "transportID")]
-    pub transport_id: u32,
+    pub transport_id: i32,
     #[serde(alias = "nftID")]
     pub nft_id: String,
     #[serde(alias = "sealedDT")]
-    pub sealed_dt: u32,
+    pub sealed_dt: i32,
     #[serde(alias = "characterName")]
     pub character_name: String,
-    pub class: u32,
+    pub class: i32,
     #[serde(alias = "lv")]
-    pub lvl: u32,
+    pub lvl: i32,
     #[serde(alias = "powerScore")]
-    pub power_score: u32,
-    pub price: u32,
+    pub power_score: i32,
+    pub price: i32,
     #[serde(alias = "MirageScore")]
-    pub mirage_score: u32,
+    pub mirage_score: i32,
     #[serde(alias = "MiraX")]
-    pub mira_x: u32,
+    pub mira_x: i32,
     #[serde(alias = "Reinforce")]
-    pub reinforce: u32,
+    pub reinforce: i32,
+    #[serde(default)]
+    pub world_name: String,
+    #[serde(default)]
+    pub trade_type: i32,
     #[serde(default)]
     pub stats: HashMap<String, String>,
     #[serde(default)]
@@ -59,7 +61,19 @@ pub struct Nft {
     #[serde(default)]
     pub holy_stuff: HashMap<String, String>,
     #[serde(default)]
-    pub succession: EquipItem,
+    pub codex: CodexResponse,
     #[serde(default)]
-    pub codex: HashMap<String, Codex>,
+    pub equip_items: HashMap<String, EquipItem>,
+    #[serde(default)]
+    pub inventory_id: i64,
+    #[serde(default)]
+    pub succession_id: i64,
+    #[serde(default)]
+    pub spirits_id: i64,
+    #[serde(default)]
+    pub magic_orb_id: i64,
+    #[serde(default)]
+    pub magic_stone_id: i64,
+    #[serde(default)]
+    pub mystical_piece_id: i64,
 }

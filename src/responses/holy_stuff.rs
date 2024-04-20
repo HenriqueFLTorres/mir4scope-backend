@@ -1,6 +1,8 @@
-use mongodb::bson::doc;
+use reqwest_middleware::ClientWithMiddleware;
 use serde::{ Deserialize, Deserializer, Serialize };
 use std::collections::HashMap;
+
+use crate::utils::get_response;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct HolyStuffResponse {
@@ -19,22 +21,21 @@ fn parse_grade_value<'de, D>(d: D) -> Result<String, D::Error> where D: Deserial
     Deserialize::deserialize(d).map(|x: Option<_>| { x.unwrap_or("0".to_string()) })
 }
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct HolyStuff {
     pub holy_stuff: HashMap<String, String>,
 }
 
 pub async fn get_nft_holy_stuff(
-    transport_id: u32,
-    client: reqwest::Client
+    transport_id: i32,
+    client: ClientWithMiddleware
 ) -> anyhow::Result<HashMap<String, String>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/holystuff?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
     );
 
-    let response = client.get(request_url).send().await?.text().await?;
-    let response_json: HolyStuffResponse = serde_json::from_str(&response)?;
+    let response_json: HolyStuffResponse = get_response(&client, request_url).await?;
+
     let holy_stuff_hashmap: HashMap<String, String> = response_json.data
         .iter()
         .map(|holy_stuff_object| {

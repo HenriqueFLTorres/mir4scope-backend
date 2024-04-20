@@ -1,36 +1,38 @@
-use crate::responses::item_detail::{ get_item_detail, ItemDetail };
-use crate::responses::nft::Nft;
-use mongodb::{ bson, bson::doc, Collection };
+use crate::{ responses::item_detail::{ get_item_detail, ItemDetail }, utils::get_response };
+use reqwest_middleware::ClientWithMiddleware;
 use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 
 use super::{ inventory::InventoryItem, item_detail::ItemDetailAdd };
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct SummaryResponse {
     pub data: SummaryResponseObject,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct SummaryResponseObject {
     pub character: Character,
     #[serde(alias = "tradeType")]
-    pub trade_type: u8,
+    pub trade_type: i32,
     #[serde(alias = "equipItem")]
     pub equip_items: HashMap<String, serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
+pub struct SummaryReturnObject {
+    pub world_name: String,
+    pub trade_type: i32,
+    pub equip_items: HashMap<String, EquipItem>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Character {
     #[serde(alias = "worldName")]
     pub world_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct EquipItem {
     #[serde(alias = "itemIdx")]
     pub item_idx: String,
@@ -46,27 +48,26 @@ pub struct EquipItem {
     #[serde(alias = "itemPath")]
     pub item_path: String,
     #[serde(alias = "powerScore")]
-    pub power_score: u32,
+    pub power_score: i32,
     pub options: Vec<ItemDetail>,
     #[serde(alias = "addOptions")]
     pub add_option: Vec<ItemDetailAdd>,
 }
 
 pub async fn get_nft_summary(
-    nft_collection: Collection<Nft>,
-    seq: u32,
-    transport_id: u32,
-    class: u32,
-    client: reqwest::Client,
-    inventory: Vec<InventoryItem>
-) -> anyhow::Result<()> {
+    seq: i32,
+    transport_id: i32,
+    class: i32,
+    client: ClientWithMiddleware,
+    inventory: Vec<InventoryItem>,
+    traddable_list: serde_json::Value
+) -> anyhow::Result<SummaryReturnObject> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/summary?seq={seq}&languageCode=en",
         seq = seq
     );
 
-    let response = client.get(request_url).send().await?.text().await?;
-    let mut response_json: SummaryResponse = serde_json::from_str(&response)?;
+    let mut response_json: SummaryResponse = get_response(&client, request_url).await?;
 
     let mut equip_items: HashMap<String, EquipItem> = HashMap::new();
     for (key, value) in response_json.data.equip_items.clone().into_iter() {
@@ -85,6 +86,10 @@ pub async fn get_nft_summary(
             equip_item["options"] = serde_json::to_value(item_detail.options).unwrap();
             equip_item["add_option"] = serde_json::to_value(item_detail.add_option).unwrap();
             equip_item["power_score"] = serde_json::to_value(item_detail.power_score).unwrap();
+
+            let item_id = equip_item["itemIdx"].to_string();
+            let is_tradable = traddable_list[item_id].clone();
+            equip_item["tradable"] = is_tradable;
         });
         let equip_object: EquipItem = serde_json::from_value(
             response_json.data.equip_items[&key].clone()
@@ -93,11 +98,11 @@ pub async fn get_nft_summary(
         equip_items.insert(key, equip_object);
     }
 
-    let filter = doc! { "seq": bson::to_bson(&seq)? };
-    let update =
-        doc! { "$set": { "trade_type": bson::to_bson(&response_json.data.trade_type)?, "world_name": bson::to_bson(&response_json.data.character.world_name)?, "equip_items": bson::to_bson(&equip_items)? } };
+    let summary_to_db: SummaryReturnObject = SummaryReturnObject {
+        trade_type: response_json.data.trade_type,
+        world_name: response_json.data.character.world_name,
+        equip_items,
+    };
 
-    nft_collection.update_one(filter, update, None).await?;
-
-    Ok(())
+    Ok(summary_to_db)
 }

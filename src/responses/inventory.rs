@@ -1,23 +1,22 @@
-use crate::Nft;
-use mongodb::{ bson::{ self, doc }, Collection, Database };
+use reqwest_middleware::ClientWithMiddleware;
 use serde::{ Deserialize, Serialize };
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
+use crate::utils::get_response;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InventoryResponse {
     #[serde(alias = "data")]
     pub inventory: Vec<InventoryItem>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct InventoryItem {
     #[serde(alias = "itemUID")]
     pub item_uid: String,
     #[serde(alias = "itemID")]
     pub item_id: String,
     pub enhance: u8,
-    pub stack: u32,
+    pub stack: i32,
     #[serde(alias = "tranceStep")]
     pub trance_step: u8,
     #[serde(alias = "RefineStep")]
@@ -37,28 +36,15 @@ pub struct InventoryItem {
 }
 
 pub async fn get_nft_inventory(
-    nft_collection: Collection<Nft>,
-    transport_id: u32,
-    client: reqwest::Client,
-    database: Database
-) -> anyhow::Result<Vec<InventoryItem>> {
+    transport_id: i32,
+    client: ClientWithMiddleware
+) -> anyhow::Result<InventoryResponse> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/inven?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
     );
 
-    let response = client.get(request_url).send().await?.text().await?;
-    let response_json: InventoryResponse = serde_json::from_str(&response)?;
+    let response_json: InventoryResponse = get_response(&client, request_url).await?;
 
-    let inventory_collection: mongodb::Collection<InventoryResponse> = database.collection(
-        "inventory"
-    );
-
-    let record = inventory_collection.insert_one(&response_json, None).await?;
-    let filter = doc! { "transport_id": bson::to_bson(&transport_id)? };
-    let update = doc! { "$set": { "inventory_id": record.inserted_id.as_object_id() } };
-
-    nft_collection.update_one(filter, update, None).await?;
-
-    Ok(response_json.inventory)
+    Ok(response_json)
 }

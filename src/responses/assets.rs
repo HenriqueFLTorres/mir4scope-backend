@@ -1,15 +1,12 @@
-use crate::utils::object_id;
-use mongodb::bson::doc;
+use reqwest_middleware::ClientWithMiddleware;
 use serde::{ de, Deserialize, Deserializer, Serialize };
 use serde_json::Value;
 
+use crate::utils::get_response;
+
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct AssetsResponse {
     pub data: Assets,
-    #[serde(alias = "nftID")]
-    #[serde(default = "object_id")]
-    pub nft_id: mongodb::bson::oid::ObjectId,
 }
 
 fn to_string<'de, D: Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
@@ -23,7 +20,6 @@ fn to_string<'de, D: Deserializer<'de>>(deserializer: D) -> Result<String, D::Er
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
 pub struct Assets {
     pub copper: String,
     pub energy: String,
@@ -36,14 +32,16 @@ pub struct Assets {
     pub dragonsteel: String,
 }
 
-pub async fn get_nft_assets(transport_id: u32, client: reqwest::Client) -> anyhow::Result<Assets> {
+pub async fn get_nft_assets(
+    transport_id: i32,
+    client: ClientWithMiddleware
+) -> anyhow::Result<Assets> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/assets?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
     );
 
-    let response = client.get(request_url).send().await?.text().await?;
-    let response_json: AssetsResponse = serde_json::from_str(&response)?;
+    let response_json: AssetsResponse = get_response(&client, request_url).await?;
 
     Ok(response_json.data)
 }

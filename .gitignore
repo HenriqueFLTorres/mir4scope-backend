@@ -1,6 +1,4 @@
 /target
 .env
-
-output.json
-
 .idea
+/src/dump_trade_items/ITEM.json

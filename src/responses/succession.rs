@@ -1,6 +1,8 @@
-use mongodb::bson::doc;
+use reqwest_middleware::ClientWithMiddleware;
 use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
+
+use crate::utils::get_response;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SuccessionResponse {
@@ -44,16 +46,15 @@ pub struct SuccessionObject {
 }
 
 pub async fn get_nft_succession(
-    transport_id: u32,
-    client: reqwest::Client
-) -> anyhow::Result<EquipItem> {
+    transport_id: i32,
+    client: ClientWithMiddleware
+) -> anyhow::Result<SuccessionResponse> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/succession?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
     );
 
-    let response = client.get(request_url).send().await?.text().await?;
-    let response_json: SuccessionResponse = serde_json::from_str(&response)?;
+    let response_json: SuccessionResponse = get_response(&client, request_url).await?;
 
-    Ok(response_json.data.equip_item)
+    Ok(response_json)
 }

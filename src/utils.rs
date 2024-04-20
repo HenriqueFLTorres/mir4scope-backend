@@ -1,19 +1,38 @@
-use crate::responses::nft::Nft;
-use mongodb::{bson::oid::ObjectId, Collection, Database};
+use reqwest_middleware::ClientWithMiddleware;
+use serde::de::DeserializeOwned;
+use sqlx::{ Pool, Postgres };
+
+static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
 #[allow(unused)]
 pub fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
 }
 
-pub fn object_id() -> ObjectId {
-    ObjectId::new()
+pub async fn get_response<T>(
+    client: &ClientWithMiddleware,
+    request_url: String
+) -> anyhow::Result<T>
+    where T: DeserializeOwned
+{
+    let response = client.get(request_url).header("User-Agent", APP_USER_AGENT).send().await?;
+
+    let body = response.text().await?;
+    let result = serde_json::from_str(&body)?;
+    Ok(result)
 }
 
-pub struct State {
-    pub nft_collection: Collection<Nft>,
-    pub client: reqwest::Client,
-    pub database: Database,
+pub fn nft_description_error(message: &str, nft_data: serde_json::Value) -> std::string::String {
+    return format!(
+        "\n {}: \n transport_id: {}, seq: {}, character_name: {} \n",
+        message,
+        nft_data["transport_id"],
+        nft_data["seq"],
+        nft_data["character_name"]
+    );
 }
 
-impl State {}
+pub struct AppState {
+    pub db: Pool<Postgres>,
+    pub client: ClientWithMiddleware,
+}
