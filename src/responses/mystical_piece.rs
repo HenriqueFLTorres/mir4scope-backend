@@ -6,7 +6,7 @@ use crate::utils::get_response;
 
 use super::{
     inventory::InventoryItem,
-    item_detail::{ self, get_item_detail, ItemDetail, ItemDetailAdd, ItemDetailData },
+    item_detail::{ get_item_detail, ItemDetail, ItemDetailAdd },
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -22,13 +22,6 @@ pub struct MysticalPieceResponseObject {
     pub equip_item: HashMap<String, HashMap<String, MysticalPiece>>,
     #[serde(alias = "activeDeck")]
     pub active_deck: i16,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum EquipItem {
-    HashMap(HashMap<String, HashMap<String, MysticalPiece>>),
-    EmptyArray(Vec<()>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

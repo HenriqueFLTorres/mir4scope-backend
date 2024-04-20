@@ -181,7 +181,14 @@ async fn dump_nft(
         .unwrap();
 
     let succession = tokio
-        ::spawn(get_nft_succession(character.transport_id, client.clone())).await
+        ::spawn(
+            get_nft_succession(
+                character.transport_id,
+                client.clone(),
+                character.class,
+                nft_inventory.clone().inventory
+            )
+        ).await
         .expect(&nft_description_error("Fail to get nft succession", nft_data.clone()))
         .unwrap();
     let spirits = tokio
