@@ -31,9 +31,9 @@ pub async fn add_nft(pool: &Pool<Postgres>, character: &Nft) -> Result<(), sqlx:
         .bind(character.price)
         .bind(character.mirage_score)
         .bind(character.mira_x)
+        .bind(character.reinforce)
         .bind(character.trade_type)
         .bind(character.world_name.clone())
-        .bind(character.reinforce)
         .bind(serde_json::json!(&character.stats))
         .bind(serde_json::json!(&character.skills))
         .bind(serde_json::json!(&character.training))
@@ -101,8 +101,8 @@ pub async fn add_spirits(
         RETURNING id
     "#;
 
-    let equip = serde_json::json!(&spirits_response.inven);
-    let inven = serde_json::json!(&spirits_response.equip);
+    let equip = serde_json::json!(&spirits_response.equip);
+    let inven = serde_json::json!(&spirits_response.inven);
 
     let id: (i64,) = sqlx::query_as(query).bind(equip).bind(inven).fetch_one(&pool).await.unwrap();
 
