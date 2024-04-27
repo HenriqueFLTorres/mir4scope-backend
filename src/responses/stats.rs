@@ -1,6 +1,7 @@
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
+use regex::Regex;
 
 use crate::utils::get_response;
 
@@ -27,7 +28,7 @@ pub struct Stats {
 pub async fn get_nft_stats(
     transport_id: i32,
     client: ClientWithMiddleware
-) -> anyhow::Result<HashMap<String, String>> {
+) -> anyhow::Result<HashMap<String, f32>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/stats?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
@@ -35,9 +36,15 @@ pub async fn get_nft_stats(
 
     let response_json: StatsResponse = get_response(&client, request_url).await?;
 
-    let stats_hashmap: HashMap<String, String> = response_json.data.lists
+    let re = Regex::new(r"%|,|sec").unwrap();
+    let stats_hashmap: HashMap<String, f32> = response_json.data.lists
         .iter()
-        .map(|stats_object| { (stats_object.stat_name.clone(), stats_object.stat_value.clone()) })
+        .map(|stats_object| {
+            let parsed_value = re.replace_all(stats_object.stat_value.as_str(), "");
+            let value_as_number = parsed_value.into_owned().parse::<f32>().unwrap();
+
+            (stats_object.stat_name.clone(), value_as_number.clone())
+        })
         .collect();
 
     Ok(stats_hashmap)

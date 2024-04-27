@@ -47,7 +47,7 @@ pub struct Nft {
     #[serde(default)]
     pub trade_type: i32,
     #[serde(default)]
-    pub stats: HashMap<String, String>,
+    pub stats: HashMap<String, f32>,
     #[serde(default)]
     pub skills: HashMap<String, String>,
     #[serde(default)]

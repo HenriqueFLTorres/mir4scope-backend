@@ -19,6 +19,8 @@ pub async fn add_nft(pool: &Pool<Postgres>, character: &Nft) -> Result<(), sqlx:
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
     "#;
 
+    let stats_json_string = serde_json::to_string(&character.stats).unwrap();
+
     sqlx::query(query)
         .bind(character.character_name.clone())
         .bind(character.seq)
@@ -34,7 +36,7 @@ pub async fn add_nft(pool: &Pool<Postgres>, character: &Nft) -> Result<(), sqlx:
         .bind(character.reinforce)
         .bind(character.trade_type)
         .bind(character.world_name.clone())
-        .bind(serde_json::json!(&character.stats))
+        .bind(serde_json::from_str::<serde_json::Value>(stats_json_string.as_str()).unwrap())
         .bind(serde_json::json!(&character.skills))
         .bind(serde_json::json!(&character.training))
         .bind(serde_json::json!(&character.buildings))
