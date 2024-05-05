@@ -1,12 +1,6 @@
 use serde::{ Deserialize, Serialize };
 
-use super::{
-    assets::Assets,
-    codex::CodexResponse,
-    potentials::Potentials,
-    summary::EquipItem,
-    training::Training,
-};
+use super::{ assets::Assets, codex::{CodexResponse, StringOrI32}, potentials::Potentials, summary::EquipItem };
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -49,17 +43,17 @@ pub struct Nft {
     #[serde(default)]
     pub stats: HashMap<String, f32>,
     #[serde(default)]
-    pub skills: HashMap<String, String>,
+    pub skills: HashMap<String, i32>,
     #[serde(default)]
-    pub training: Training,
+    pub training: HashMap<String, StringOrI32>,
     #[serde(default)]
-    pub buildings: HashMap<String, String>,
+    pub buildings: HashMap<String, i32>,
     #[serde(default)]
     pub assets: Assets,
     #[serde(default)]
     pub potentials: Potentials,
     #[serde(default)]
-    pub holy_stuff: HashMap<String, String>,
+    pub holy_stuff: HashMap<String, i32>,
     #[serde(default)]
     pub codex: CodexResponse,
     #[serde(default)]
