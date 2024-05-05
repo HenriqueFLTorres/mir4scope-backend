@@ -4,6 +4,8 @@ use std::collections::HashMap;
 
 use crate::utils::get_response;
 
+use super::codex::StringOrI32;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TrainingResponse {
     pub code: u16,
@@ -25,13 +27,13 @@ pub struct TrainingResponseData {
     #[serde(alias = "5")]
     pub toad_stance: TrainingObject,
     #[serde(alias = "consitutionLevel")]
-    pub consitution_level: u8,
+    pub consitution_level: StringOrI32,
     #[serde(alias = "consitutionName")]
-    pub consitution_name: String,
+    pub consitution_name: StringOrI32,
     #[serde(alias = "collectName")]
-    pub collect_name: String,
+    pub collect_name: StringOrI32,
     #[serde(alias = "collectLevel")]
-    pub collect_level: u8,
+    pub collect_level: StringOrI32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -39,52 +41,52 @@ pub struct TrainingObject {
     #[serde(alias = "forceIdx")]
     pub force_idx: String,
     #[serde(alias = "forceLevel")]
-    pub force_level: String,
+    pub force_level: StringOrI32,
     #[serde(alias = "forceName")]
     pub force_name: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "snake_case"))]
-pub struct Training {
-    #[serde(alias = "training")]
-    pub chi: HashMap<String, String>,
-    pub constitution: u8,
-    #[serde(alias = "collectName")]
-    pub collect_name: String,
-    #[serde(alias = "collectLevel")]
-    pub collect_level: u8,
 }
 
 pub async fn get_nft_training(
     transport_id: i32,
     client: ClientWithMiddleware
-) -> anyhow::Result<Training> {
+) -> anyhow::Result<HashMap<String, StringOrI32>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/training?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
     );
 
     let response_json: TrainingResponse = get_response(&client, request_url).await?;
+    let data = response_json.data;
 
-    let chi_hashmap: HashMap<String, String> = HashMap::from([
-        ("Violet Mist Art".to_string(), response_json.data.violet_mist_art.force_level),
+    let training_hashmap: HashMap<String, StringOrI32> = HashMap::from([
+        (
+            "Violet Mist Art".to_string(),
+            StringOrI32::Integer(data.violet_mist_art.force_level.as_i32().unwrap()),
+        ),
         (
             "Muscle Strength Manual".to_string(),
-            response_json.data.muscle_strength_manual.force_level,
+            StringOrI32::Integer(data.muscle_strength_manual.force_level.as_i32().unwrap()),
         ),
-        ("Nine Yang Manual".to_string(), response_json.data.nine_yang_manual.force_level),
-        ("Toad Stance".to_string(), response_json.data.toad_stance.force_level),
-        ("Northern Profound Art".to_string(), response_json.data.northern_profound_art.force_level),
-        ("Nine Yin Manual".to_string(), response_json.data.nine_yin_manual.force_level),
+        (
+            "Nine Yang Manual".to_string(),
+            StringOrI32::Integer(data.nine_yang_manual.force_level.as_i32().unwrap()),
+        ),
+        (
+            "Toad Stance".to_string(),
+            StringOrI32::Integer(data.toad_stance.force_level.as_i32().unwrap()),
+        ),
+        (
+            "Northern Profound Art".to_string(),
+            StringOrI32::Integer(data.northern_profound_art.force_level.as_i32().unwrap()),
+        ),
+        (
+            "Nine Yin Manual".to_string(),
+            StringOrI32::Integer(data.nine_yin_manual.force_level.as_i32().unwrap()),
+        ),
+        ("Constitution".to_string(), data.consitution_level),
+        ("collect_name".to_string(), data.collect_name),
+        ("collect_level".to_string(), data.collect_level),
     ]);
 
-    let training_to_db: Training = Training {
-        chi: chi_hashmap,
-        collect_level: response_json.data.collect_level,
-        collect_name: response_json.data.collect_name,
-        constitution: response_json.data.consitution_level,
-    };
-
-    Ok(training_to_db)
+    Ok(training_hashmap)
 }
