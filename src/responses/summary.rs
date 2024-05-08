@@ -1,9 +1,12 @@
-use crate::{ responses::item_detail::{ get_item_detail, ItemDetail }, utils::get_response };
+use crate::{
+    responses::item_detail::{get_item_detail, ItemDetail},
+    utils::get_response,
+};
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use super::{ inventory::InventoryItem, item_detail::ItemDetailAdd };
+use super::{inventory::InventoryItem, item_detail::ItemDetailAdd};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SummaryResponse {
@@ -60,7 +63,7 @@ pub async fn get_nft_summary(
     class: i32,
     client: ClientWithMiddleware,
     inventory: Vec<InventoryItem>,
-    traddable_list: serde_json::Value
+    traddable_list: serde_json::Value,
 ) -> anyhow::Result<SummaryReturnObject> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/summary?seq={seq}&languageCode=en",
@@ -75,25 +78,25 @@ pub async fn get_nft_summary(
             .iter()
             .find(|inventory_item| inventory_item.item_id == value["itemIdx"])
             .expect("Item not found in inventory.");
-        let item_detail = get_item_detail(
-            &client,
-            &transport_id,
-            &class,
-            &item_match.item_uid
-        ).await.expect("item detail failed");
+        let item_detail = get_item_detail(&client, &transport_id, &class, &item_match.item_uid)
+            .await
+            .expect("item detail failed");
 
-        response_json.data.equip_items.entry(key.clone()).and_modify(|equip_item| {
-            equip_item["options"] = serde_json::to_value(item_detail.options).unwrap();
-            equip_item["add_option"] = serde_json::to_value(item_detail.add_option).unwrap();
-            equip_item["power_score"] = serde_json::to_value(item_detail.power_score).unwrap();
+        response_json
+            .data
+            .equip_items
+            .entry(key.clone())
+            .and_modify(|equip_item| {
+                equip_item["options"] = serde_json::to_value(item_detail.options).unwrap();
+                equip_item["add_option"] = serde_json::to_value(item_detail.add_option).unwrap();
+                equip_item["power_score"] = serde_json::to_value(item_detail.power_score).unwrap();
 
-            let item_id = equip_item["itemIdx"].to_string();
-            let is_tradable = traddable_list[item_id].clone();
-            equip_item["tradable"] = is_tradable;
-        });
-        let equip_object: EquipItem = serde_json::from_value(
-            response_json.data.equip_items[&key].clone()
-        )?;
+                let item_id = equip_item["itemIdx"].to_string();
+                let is_tradable = traddable_list[item_id].clone();
+                equip_item["tradable"] = is_tradable;
+            });
+        let equip_object: EquipItem =
+            serde_json::from_value(response_json.data.equip_items[&key].clone())?;
 
         equip_items.insert(key, equip_object);
     }

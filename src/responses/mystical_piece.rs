@@ -1,12 +1,12 @@
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::utils::get_response;
 
 use super::{
     inventory::InventoryItem,
-    item_detail::{ get_item_detail, ItemDetail, ItemDetailAdd },
+    item_detail::{get_item_detail, ItemDetail, ItemDetailAdd},
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -51,7 +51,7 @@ pub async fn get_nft_mystical_piece(
     transport_id: i32,
     class: i32,
     client: ClientWithMiddleware,
-    inventory: Vec<InventoryItem>
+    inventory: Vec<InventoryItem>,
 ) -> anyhow::Result<MysticalPieceResponseObject> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/mysticalpiece?transportID={transport_id}&languageCode=en",
@@ -73,8 +73,10 @@ pub async fn get_nft_mystical_piece(
                     &client,
                     &transport_id,
                     &class,
-                    &item_match.unwrap().item_uid
-                ).await.expect("Mystical piece item detail failed");
+                    &item_match.unwrap().item_uid,
+                )
+                .await
+                .expect("Mystical piece item detail failed");
 
                 piece_value.options = item_detail.options;
                 piece_value.add_option = item_detail.add_option;

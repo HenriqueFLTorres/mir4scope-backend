@@ -1,10 +1,7 @@
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 
 use super::{
-    assets::Assets,
-    codex::CodexResponse,
-    potentials::Potentials,
-    summary::EquipItem,
+    assets::Assets, codex::CodexResponse, potentials::Potentials, summary::EquipItem,
     training::Training,
 };
 use std::collections::HashMap;

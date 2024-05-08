@@ -30,9 +30,7 @@ mod utils;
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().expect(".env file not found");
 
-    let subscriber = tracing_subscriber::fmt()
-        .pretty()
-        .finish();
+    let subscriber = tracing_subscriber::fmt().pretty().finish();
     tracing::subscriber::set_global_default(subscriber)
         .expect("Can't set default tracing subscriber");
 
@@ -142,7 +140,8 @@ async fn dump_nft(
         &nft_description_error("Fail to get serde_json value from nft", nft_data.clone()),
     );
 
-    let db_transport_id: (bool,) = sqlx::query_as("
+    let db_transport_id: (bool,) = sqlx::query_as(
+        "
       select
           exists (
             select
@@ -151,14 +150,16 @@ async fn dump_nft(
               nft
             where
               transport_id = $1
-      );")
-        .bind(character.transport_id)
-        .fetch_one(&pool)
-        .await.unwrap();
+      );",
+    )
+    .bind(character.transport_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
 
     if db_transport_id.0 {
         tracing::info!("existe porra {}", character.transport_id);
-        return Ok(()) 
+        return Ok(());
     }
 
     //if !character.transport_id == db_transport_id.0 {

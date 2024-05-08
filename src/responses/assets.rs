@@ -1,5 +1,5 @@
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ de, Deserialize, Deserializer, Serialize };
+use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
 use crate::utils::get_response;
@@ -34,7 +34,7 @@ pub struct Assets {
 
 pub async fn get_nft_assets(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<Assets> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/assets?transportID={transport_id}&languageCode=en",

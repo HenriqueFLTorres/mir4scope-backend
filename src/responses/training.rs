@@ -1,5 +1,5 @@
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::utils::get_response;
@@ -58,7 +58,7 @@ pub struct Training {
 
 pub async fn get_nft_training(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<Training> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/training?transportID={transport_id}&languageCode=en",
@@ -68,15 +68,30 @@ pub async fn get_nft_training(
     let response_json: TrainingResponse = get_response(&client, request_url).await?;
 
     let chi_hashmap: HashMap<String, String> = HashMap::from([
-        ("Violet Mist Art".to_string(), response_json.data.violet_mist_art.force_level),
+        (
+            "Violet Mist Art".to_string(),
+            response_json.data.violet_mist_art.force_level,
+        ),
         (
             "Muscle Strength Manual".to_string(),
             response_json.data.muscle_strength_manual.force_level,
         ),
-        ("Nine Yang Manual".to_string(), response_json.data.nine_yang_manual.force_level),
-        ("Toad Stance".to_string(), response_json.data.toad_stance.force_level),
-        ("Northern Profound Art".to_string(), response_json.data.northern_profound_art.force_level),
-        ("Nine Yin Manual".to_string(), response_json.data.nine_yin_manual.force_level),
+        (
+            "Nine Yang Manual".to_string(),
+            response_json.data.nine_yang_manual.force_level,
+        ),
+        (
+            "Toad Stance".to_string(),
+            response_json.data.toad_stance.force_level,
+        ),
+        (
+            "Northern Profound Art".to_string(),
+            response_json.data.northern_profound_art.force_level,
+        ),
+        (
+            "Nine Yin Manual".to_string(),
+            response_json.data.nine_yin_manual.force_level,
+        ),
     ]);
 
     let training_to_db: Training = Training {

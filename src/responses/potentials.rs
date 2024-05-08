@@ -1,5 +1,5 @@
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 
 use crate::utils::get_response;
 
@@ -26,7 +26,7 @@ pub struct Potentials {
 
 pub async fn get_nft_potentials(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<Potentials> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/potential?transportID={transport_id}&languageCode=en",
