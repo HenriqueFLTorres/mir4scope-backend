@@ -158,14 +158,9 @@ async fn dump_nft(
     .unwrap();
 
     if db_transport_id.0 {
-        tracing::info!("existe porra {}", character.transport_id);
+        tracing::info!("transport_id: {} exist in the database", character.transport_id);
         return Ok(());
     }
-
-    //if !character.transport_id == db_transport_id.0 {
-    //    tracing::info!("Character already added. Skipping...");
-    //    return Ok(())
-    //}
 
     let nft_inventory = tokio::spawn(get_nft_inventory(character.transport_id, client.clone()))
         .await
