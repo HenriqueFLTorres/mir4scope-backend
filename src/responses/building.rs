@@ -1,5 +1,5 @@
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::utils::get_response;
@@ -20,7 +20,7 @@ pub struct BuildingObject {
 
 pub async fn get_nft_buildings(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<HashMap<String, String>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/building?transportID={transport_id}&languageCode=en",
@@ -28,11 +28,15 @@ pub async fn get_nft_buildings(
     );
 
     let response_json: BuildingResponse = get_response(&client, request_url).await?;
-    
-    let building_hashmap: HashMap<String, String> = response_json.data
+
+    let building_hashmap: HashMap<String, String> = response_json
+        .data
         .iter()
         .map(|building_object| {
-            (building_object.1.building_name.clone(), building_object.1.building_level.clone())
+            (
+                building_object.1.building_name.clone(),
+                building_object.1.building_level.clone(),
+            )
         })
         .collect();
 

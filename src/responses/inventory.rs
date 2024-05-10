@@ -1,5 +1,5 @@
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 
 use crate::utils::get_response;
 
@@ -37,7 +37,7 @@ pub struct InventoryItem {
 
 pub async fn get_nft_inventory(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<InventoryResponse> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/inven?transportID={transport_id}&languageCode=en",

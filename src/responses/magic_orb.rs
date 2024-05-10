@@ -1,5 +1,5 @@
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::utils::get_response;
@@ -45,7 +45,7 @@ pub struct MagicOrb {
 
 pub async fn get_nft_magic_orb(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<MagicOrbResponse> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/magicorb?transportID={transport_id}&languageCode=en",
