@@ -32,7 +32,6 @@ mod cli;
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().expect(".env file not found");
-    let cli = Cli::parse();
 
     let subscriber = tracing_subscriber::fmt().pretty().finish();
     tracing::subscriber::set_global_default(subscriber)
@@ -63,6 +62,8 @@ async fn main() -> anyhow::Result<()> {
         "DELETE FROM mystical_piece",
     ];
 
+    let cli = Cli::parse();
+
     if cli.drop {
         for query in delete_all_queries {
             sqlx::query(query)
@@ -74,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut join_set = JoinSet::new();
 
-    for i in cli.initial_page..cli.final_page {
+    for i in cli.initial_page..cli.final_page+1 {
         join_set.spawn(retrieve_and_save_nft(
             app_state.client.to_owned(),
             i,
