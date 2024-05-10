@@ -1,3 +1,4 @@
+use clap::Parser;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use responses::nft::{Nft, NftListResponse};
@@ -8,6 +9,7 @@ use std::time::Instant;
 use tokio::sync::Mutex;
 use tokio::task::{JoinError, JoinSet};
 
+use crate::cli::Cli;
 use crate::responses::magic_orb::get_nft_magic_orb;
 use crate::responses::magic_stone::get_nft_magic_stone;
 use crate::responses::mystical_piece::get_nft_mystical_piece;
@@ -25,10 +27,12 @@ use crate::utils::{get_response, nft_description_error};
 mod db;
 mod responses;
 mod utils;
+mod cli;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().expect(".env file not found");
+    let cli = Cli::parse();
 
     let subscriber = tracing_subscriber::fmt().pretty().finish();
     tracing::subscriber::set_global_default(subscriber)
@@ -36,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
 
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(1);
     let bindings = Arc::new(Mutex::new(AppState {
-        db: db::create_pool().await?,
+        db: db::create_pool().await.unwrap(),
         client: ClientBuilder::new(reqwest::Client::new())
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
             .build(),
@@ -59,15 +63,18 @@ async fn main() -> anyhow::Result<()> {
         "DELETE FROM mystical_piece",
     ];
 
-    for query in delete_all_queries {
-        sqlx::query(query)
-            .execute(&app_state.db.to_owned())
-            .await
-            .unwrap();
+    if cli.drop {
+        for query in delete_all_queries {
+            sqlx::query(query)
+                .execute(&app_state.db.to_owned())
+                .await
+                .unwrap();
+        }
     }
 
     let mut join_set = JoinSet::new();
-    for i in 1..3 {
+
+    for i in cli.initial_page..cli.final_page {
         join_set.spawn(retrieve_and_save_nft(
             app_state.client.to_owned(),
             i,
@@ -75,11 +82,11 @@ async fn main() -> anyhow::Result<()> {
             traddable_list.clone(),
         ));
     }
+
     while let Some(res) = join_set.join_next().await {
-        let out = res?;
-        match out {
-            Err(err) => tracing::error!("{}", err),
-            Ok(_) => {}
+        let out = res.unwrap();
+        if let Err(err) = out {
+            tracing::error!("{}", err)
         }
     }
 
@@ -91,7 +98,7 @@ async fn main() -> anyhow::Result<()> {
 
 async fn retrieve_and_save_nft(
     client: ClientWithMiddleware,
-    page_index: i32,
+    page_index: u8,
     database: Pool<Postgres>,
     traddable_list: serde_json::Value,
 ) -> anyhow::Result<()> {
