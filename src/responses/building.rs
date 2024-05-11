@@ -19,7 +19,7 @@ pub struct BuildingObject {
 
 pub async fn get_nft_buildings(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<HashMap<String, i32>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/building?transportID={transport_id}&languageCode=en",
@@ -28,12 +28,16 @@ pub async fn get_nft_buildings(
 
     let response_json: BuildingResponse = get_response(&client, request_url).await?;
 
-    let building_hashmap: HashMap<String, i32> = response_json.data
+    let building_hashmap: HashMap<String, i32> = response_json
+        .data
         .iter()
         .map(|building_object| {
             let value_as_number = building_object.1.building_level.parse::<i32>().unwrap();
 
-            (building_object.1.building_name.clone(), value_as_number.clone())
+            (
+                building_object.1.building_name.clone(),
+                value_as_number.clone(),
+            )
         })
         .collect();
 

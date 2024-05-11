@@ -158,7 +158,10 @@ async fn dump_nft(
     .unwrap();
 
     if db_transport_id.0 {
-        tracing::info!("transport_id: {} exist in the database", character.transport_id);
+        tracing::info!(
+            "transport_id: {} exist in the database",
+            character.transport_id
+        );
         return Ok(());
     }
 

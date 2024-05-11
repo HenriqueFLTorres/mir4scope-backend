@@ -48,7 +48,7 @@ pub struct TrainingObject {
 
 pub async fn get_nft_training(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<HashMap<String, StringOrI32>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/training?transportID={transport_id}&languageCode=en",

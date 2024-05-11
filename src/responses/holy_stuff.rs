@@ -30,7 +30,7 @@ pub struct HolyStuff {
 
 pub async fn get_nft_holy_stuff(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<HashMap<String, i32>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/holystuff?transportID={transport_id}&languageCode=en",
@@ -39,12 +39,16 @@ pub async fn get_nft_holy_stuff(
 
     let response_json: HolyStuffResponse = get_response(&client, request_url).await?;
 
-    let holy_stuff_hashmap: HashMap<String, i32> = response_json.data
+    let holy_stuff_hashmap: HashMap<String, i32> = response_json
+        .data
         .iter()
         .map(|holy_stuff_object| {
             let value_as_number = holy_stuff_object.1.grade.parse::<i32>().unwrap();
 
-            (holy_stuff_object.1.holy_stuff_name.clone(), value_as_number.clone())
+            (
+                holy_stuff_object.1.holy_stuff_name.clone(),
+                value_as_number.clone(),
+            )
         })
         .collect();
 

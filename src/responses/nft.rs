@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use super::{ assets::Assets, codex::{CodexResponse, StringOrI32}, potentials::Potentials, summary::EquipItem };
+use super::{
+    assets::Assets,
+    codex::{CodexResponse, StringOrI32},
+    potentials::Potentials,
+    summary::EquipItem,
+};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
