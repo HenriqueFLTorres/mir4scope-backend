@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 
-use crate::{ responses, utils::get_response };
+use crate::{responses, utils::get_response};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct CodexResponse {
@@ -43,7 +43,7 @@ impl StringOrI32 {
 
 pub async fn get_nft_codex(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<CodexResponse> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/codex?transportID={transport_id}&languageCode=en",

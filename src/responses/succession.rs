@@ -1,12 +1,12 @@
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::utils::get_response;
 
 use super::{
     inventory::InventoryItem,
-    item_detail::{ get_item_detail, ItemDetail, ItemDetailAdd },
+    item_detail::{get_item_detail, ItemDetail, ItemDetailAdd},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -60,7 +60,7 @@ pub async fn get_nft_succession(
     transport_id: i32,
     client: ClientWithMiddleware,
     class: i32,
-    inventory: Vec<InventoryItem>
+    inventory: Vec<InventoryItem>,
 ) -> anyhow::Result<SuccessionResponse> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/succession?transportID={transport_id}&languageCode=en",
@@ -78,12 +78,10 @@ pub async fn get_nft_succession(
                     .find(|inventory_item| inventory_item.item_id == succession.item_idx);
 
                 if let Some(item) = item_match {
-                    let item_detail = get_item_detail(
-                        &client,
-                        &transport_id,
-                        &class,
-                        &item.item_uid
-                    ).await.expect("Succession item detail failed");
+                    let item_detail =
+                        get_item_detail(&client, &transport_id, &class, &item.item_uid)
+                            .await
+                            .expect("Succession item detail failed");
                     succession.options = item_detail.options;
                     succession.add_option = item_detail.add_option;
                     succession.power_score = item_detail.power_score;

@@ -1,5 +1,5 @@
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Deserializer, Serialize };
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 
 use crate::utils::get_response;
@@ -17,8 +17,11 @@ pub struct HolyStuffObject {
     pub grade: String,
 }
 
-fn parse_grade_value<'de, D>(d: D) -> Result<String, D::Error> where D: Deserializer<'de> {
-    Deserialize::deserialize(d).map(|x: Option<_>| { x.unwrap_or("0".to_string()) })
+fn parse_grade_value<'de, D>(d: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or("0".to_string()))
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct HolyStuff {

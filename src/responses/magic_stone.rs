@@ -2,10 +2,10 @@ use crate::utils::get_response;
 
 use super::{
     inventory::InventoryItem,
-    item_detail::{ get_item_detail, ItemDetail, ItemDetailAdd },
+    item_detail::{get_item_detail, ItemDetail, ItemDetailAdd},
 };
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -57,7 +57,7 @@ pub async fn get_nft_magic_stone(
     transport_id: i32,
     class: i32,
     client: ClientWithMiddleware,
-    inventory: Vec<InventoryItem>
+    inventory: Vec<InventoryItem>,
 ) -> anyhow::Result<MagicStoneResponseObject> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/magicstone?transportID={transport_id}&languageCode=en",
@@ -79,8 +79,10 @@ pub async fn get_nft_magic_stone(
                     &client,
                     &transport_id,
                     &class,
-                    &item_match.unwrap().item_uid
-                ).await.expect("Magic stone item detail failed");
+                    &item_match.unwrap().item_uid,
+                )
+                .await
+                .expect("Magic stone item detail failed");
 
                 stone_value.options = item_detail.options;
                 stone_value.add_option = item_detail.add_option;

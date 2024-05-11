@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 
 use crate::utils::get_response;
 
@@ -31,7 +31,7 @@ pub struct Spirit {
 
 pub async fn get_nft_spirits(
     transport_id: i32,
-    client: ClientWithMiddleware
+    client: ClientWithMiddleware,
 ) -> anyhow::Result<SpiritsObject> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/spirit?transportID={transport_id}&languageCode=en",
