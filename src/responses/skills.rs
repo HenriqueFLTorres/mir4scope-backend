@@ -26,7 +26,7 @@ pub async fn get_nft_skills(
     transport_id: i32,
     character_class: i32,
     client: ClientWithMiddleware,
-) -> anyhow::Result<HashMap<String, String>> {
+) -> anyhow::Result<HashMap<String, i32>> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/skills?transportID={transport_id}&class={character_class}&languageCode=en",
         transport_id = transport_id,
@@ -35,14 +35,13 @@ pub async fn get_nft_skills(
 
     let response_json: SkillsResponse = get_response(&client, request_url).await?;
 
-    let skills_hashmap: HashMap<String, String> = response_json
+    let skills_hashmap: HashMap<String, i32> = response_json
         .data
         .iter()
         .map(|skill_object| {
-            (
-                skill_object.skill_name.clone(),
-                skill_object.skill_level.clone(),
-            )
+            let value_as_number = skill_object.skill_level.parse::<i32>().unwrap();
+
+            (skill_object.skill_name.clone(), value_as_number.clone())
         })
         .collect();
 

@@ -31,16 +31,21 @@ mod cli;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
-    dotenvy::dotenv().expect(".env file not found");
+    // dotenvy::dotenv().expect(".env file not found");
 
     let subscriber = tracing_subscriber::fmt().pretty().finish();
     tracing::subscriber::set_global_default(subscriber)
         .expect("Can't set default tracing subscriber");
 
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(1);
+    let basic_client = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .build()
+        .unwrap();
+
     let bindings = Arc::new(Mutex::new(AppState {
-        db: db::create_pool().await.unwrap(),
-        client: ClientBuilder::new(reqwest::Client::new())
+        db: db::create_pool().await?,
+        client: ClientBuilder::new(basic_client)
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
             .build(),
     }));
@@ -48,7 +53,8 @@ async fn main() -> anyhow::Result<()> {
 
     let now = Instant::now();
 
-    let data = fs::read_to_string("src/dump_trade_items/list.json").unwrap();
+    // let data = fs::read_to_string("src/dump_trade_items/list.json").unwrap();
+    let data = fs::read_to_string("list.json").unwrap();
     let traddable_list: serde_json::Value =
         serde_json::from_str(&data).expect("list.json file was not found");
 
@@ -85,9 +91,10 @@ async fn main() -> anyhow::Result<()> {
     }
 
     while let Some(res) = join_set.join_next().await {
-        let out = res.unwrap();
-        if let Err(err) = out {
-            tracing::error!("{}", err)
+        let out = res?;
+        match out {
+            Err(err) => tracing::error!("Error spawning NFT list: {}", err),
+            Ok(_) => {}
         }
     }
 
@@ -108,7 +115,7 @@ async fn retrieve_and_save_nft(
         page = page_index
     );
 
-    let response_json: NftListResponse = get_response(&client, request_url).await?;
+    let response_json: NftListResponse = get_response(&client, request_url).await.unwrap();
 
     let nft_list = serde_json::to_value(response_json.data.lists)?;
 
@@ -166,7 +173,10 @@ async fn dump_nft(
     .unwrap();
 
     if db_transport_id.0 {
-        tracing::info!("transport_id: {} exist in the database", character.transport_id);
+        tracing::info!(
+            "transport_id: {} exist in the database",
+            character.transport_id
+        );
         return Ok(());
     }
 
@@ -290,7 +300,7 @@ async fn dump_nft(
         | (_, _, _, _, _, _, Err(err), _, _)
         | (_, _, _, _, _, _, _, Err(err), _)
         | (_, _, _, _, _, _, _, _, Err(err)) => {
-            tracing::error!("Error joining nft_creation auxiliary tasks {:#?}", err)
+            tracing::error!("Error joining nft_creation auxiliary tasks {:#?}", err);
         }
     }
 
