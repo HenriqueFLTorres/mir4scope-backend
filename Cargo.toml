@@ -12,7 +12,6 @@ path = "src/dump_trade_items/main.rs"
 
 [dependencies]
 sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres"] }
-convert_case = "0.6.0"
 dotenvy = "0.15.7"
 serde = "1.0.197"
 serde_json = "1.0.114"

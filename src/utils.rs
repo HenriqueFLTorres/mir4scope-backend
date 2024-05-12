@@ -20,7 +20,8 @@ where
         .get(request_url)
         .header("User-Agent", APP_USER_AGENT)
         .send()
-        .await?;
+        .await
+        .unwrap();
 
     let body = response.text().await?;
     let result = serde_json::from_str(&body)?;
