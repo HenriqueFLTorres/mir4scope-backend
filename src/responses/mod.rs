@@ -14,5 +14,5 @@ pub mod spirits;
 pub mod stats;
 pub mod succession;
 pub mod summary;
-pub mod training;
 pub mod ticket;
+pub mod training;

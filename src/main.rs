@@ -229,17 +229,15 @@ async fn dump_nft(
         "Fail to get nft mystical_piece",
         nft_data.clone(),
     ))
-     .unwrap();
-    
-    character.tickets = tokio::spawn(get_nft_tickets(
-        nft_inventory.clone().inventory,
-    ))
-    .await
-    .expect(&nft_description_error(
-        "Fail to get nft tickets",
-        nft_data.clone(),
-    ))
     .unwrap();
+
+    character.tickets = tokio::spawn(get_nft_tickets(nft_inventory.clone().inventory))
+        .await
+        .expect(&nft_description_error(
+            "Fail to get nft tickets",
+            nft_data.clone(),
+        ))
+        .unwrap();
 
     let (summary, stats, skills, training, buildings, assets, potentials, holy_stuff, codex) = tokio::join!(
         tokio::spawn(get_nft_summary(
