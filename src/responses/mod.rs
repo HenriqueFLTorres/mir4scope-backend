@@ -15,3 +15,4 @@ pub mod stats;
 pub mod succession;
 pub mod summary;
 pub mod training;
+pub mod ticket;

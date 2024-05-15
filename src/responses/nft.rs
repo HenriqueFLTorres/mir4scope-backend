@@ -64,6 +64,8 @@ pub struct Nft {
     #[serde(default)]
     pub equip_items: HashMap<String, EquipItem>,
     #[serde(default)]
+    pub tickets: HashMap<String, i32>,
+    #[serde(default)]
     pub inventory_id: i64,
     #[serde(default)]
     pub succession_id: i64,
