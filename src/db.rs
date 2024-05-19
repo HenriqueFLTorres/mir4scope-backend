@@ -17,8 +17,8 @@ pub async fn create_pool() -> Result<Pool<Postgres>, sqlx::Error> {
 
 pub async fn add_nft(pool: &Pool<Postgres>, character: &Nft) -> Result<(), sqlx::Error> {
     let query = r#"
-      INSERT INTO nft (character_name, seq, transport_id, nft_id, sealed_dt, class, lvl, power_score, price, mirage_score, mira_x, reinforce, trade_type, world_name, stats, skills, training, buildings, assets, potentials, holy_stuff, codex, equip_items, inventory_id, succession_id, spirits_id, magic_orb_id, magic_stone_id, mystical_piece_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
+      INSERT INTO nft (character_name, seq, transport_id, nft_id, sealed_dt, class, lvl, power_score, price, mirage_score, mira_x, reinforce, trade_type, world_name, stats, skills, training, buildings, assets, potentials, holy_stuff, codex, equip_items, tickets, inventory_id, succession_id, spirits_id, magic_orb_id, magic_stone_id, mystical_piece_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
     "#;
 
     let stats_json_string = serde_json::to_string(&character.stats).unwrap();
@@ -47,6 +47,7 @@ pub async fn add_nft(pool: &Pool<Postgres>, character: &Nft) -> Result<(), sqlx:
         .bind(serde_json::json!(&character.holy_stuff))
         .bind(serde_json::json!(&character.codex))
         .bind(serde_json::json!(&character.equip_items))
+        .bind(serde_json::json!(&character.tickets))
         .bind(character.inventory_id)
         .bind(character.succession_id)
         .bind(character.spirits_id)

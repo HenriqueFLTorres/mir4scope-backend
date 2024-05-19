@@ -13,6 +13,7 @@ use crate::responses::magic_stone::get_nft_magic_stone;
 use crate::responses::mystical_piece::get_nft_mystical_piece;
 use crate::responses::spirits::get_nft_spirits;
 use crate::responses::succession::get_nft_succession;
+use crate::responses::ticket::get_nft_tickets;
 use crate::responses::{
     assets::get_nft_assets, building::get_nft_buildings, codex::get_nft_codex,
     holy_stuff::get_nft_holy_stuff, inventory::get_nft_inventory, potentials::get_nft_potentials,
@@ -28,7 +29,7 @@ mod utils;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
-    // dotenvy::dotenv().expect(".env file not found");
+    //dotenvy::dotenv().expect(".env file not found");
 
     let subscriber = tracing_subscriber::fmt().pretty().finish();
     tracing::subscriber::set_global_default(subscriber)
@@ -229,6 +230,14 @@ async fn dump_nft(
         nft_data.clone(),
     ))
     .unwrap();
+
+    character.tickets = tokio::spawn(get_nft_tickets(nft_inventory.clone().inventory))
+        .await
+        .expect(&nft_description_error(
+            "Fail to get nft tickets",
+            nft_data.clone(),
+        ))
+        .unwrap();
 
     let (summary, stats, skills, training, buildings, assets, potentials, holy_stuff, codex) = tokio::join!(
         tokio::spawn(get_nft_summary(
