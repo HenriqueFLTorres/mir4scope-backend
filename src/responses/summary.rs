@@ -1,5 +1,6 @@
 use crate::{
     responses::item_detail::{get_item_detail, ItemDetail},
+    utils::default_bool,
     utils::get_response,
 };
 use reqwest_middleware::ClientWithMiddleware;
@@ -55,6 +56,8 @@ pub struct EquipItem {
     pub options: Vec<ItemDetail>,
     #[serde(alias = "addOptions")]
     pub add_option: Vec<ItemDetailAdd>,
+    #[serde(default = "default_bool")]
+    pub is_tradable: bool,
 }
 
 pub async fn get_nft_summary(
@@ -63,7 +66,7 @@ pub async fn get_nft_summary(
     class: i32,
     client: ClientWithMiddleware,
     inventory: Vec<InventoryItem>,
-    traddable_list: serde_json::Value,
+    tradable_list: serde_json::Value,
 ) -> anyhow::Result<SummaryReturnObject> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/summary?seq={seq}&languageCode=en",
@@ -91,9 +94,13 @@ pub async fn get_nft_summary(
                 equip_item["add_option"] = serde_json::to_value(item_detail.add_option).unwrap();
                 equip_item["power_score"] = serde_json::to_value(item_detail.power_score).unwrap();
 
-                let item_id = equip_item["itemIdx"].to_string();
-                let is_tradable = traddable_list[item_id].clone();
-                equip_item["tradable"] = is_tradable;
+                let item_id: String =
+                    serde_json::from_value(equip_item["itemIdx"].clone()).unwrap();
+                if tradable_list[&item_id.to_string()] == 1 {
+                    equip_item["is_tradable"] = serde_json::to_value(true).unwrap();
+                    println!("encoutronou");
+                    println!("{:#?}", equip_item["is_tradable"])
+                }
             });
         let equip_object: EquipItem =
             serde_json::from_value(response_json.data.equip_items[&key].clone())?;
