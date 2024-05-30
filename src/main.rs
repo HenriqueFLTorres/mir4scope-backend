@@ -25,14 +25,14 @@ use crate::responses::{
 use crate::utils::AppState;
 use crate::utils::{get_response, nft_description_error};
 
+mod cli;
 mod db;
 mod responses;
 mod utils;
-mod cli;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
-    //dotenvy::dotenv().expect(".env file not found");
+    dotenvy::dotenv().expect(".env file not found");
 
     let subscriber = tracing_subscriber::fmt().pretty().finish();
     tracing::subscriber::set_global_default(subscriber)
@@ -54,8 +54,8 @@ async fn main() -> anyhow::Result<()> {
 
     let now = Instant::now();
 
-    // let data = fs::read_to_string("src/dump_trade_items/list.json").unwrap();
-    let data = fs::read_to_string("list.json").unwrap();
+    let data = fs::read_to_string("src/dump_trade_items/list.json").unwrap();
+    // let data = fs::read_to_string("list.json").unwrap();
     let traddable_list: serde_json::Value =
         serde_json::from_str(&data).expect("list.json file was not found");
 
@@ -82,7 +82,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut join_set = JoinSet::new();
 
-    for i in cli.initial_page..cli.final_page+1 {
+    for i in cli.initial_page..cli.final_page + 1 {
         join_set.spawn(retrieve_and_save_nft(
             app_state.client.to_owned(),
             i,
@@ -181,7 +181,7 @@ async fn dump_nft(
         return Ok(());
     }
 
-    let nft_inventory = tokio::spawn(get_nft_inventory(character.transport_id, client.clone()))
+    let nft_inventory = tokio::spawn(get_nft_inventory(character.transport_id, client.clone(), traddable_list.clone()))
         .await
         .expect(&nft_description_error(
             "Fail to get nft inventory",

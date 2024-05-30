@@ -7,6 +7,8 @@ use crate::utils::get_response;
 pub struct InventoryResponse {
     #[serde(alias = "data")]
     pub inventory: Vec<InventoryItem>,
+    #[serde(skip_deserializing)]
+    pub tradeable_items: Vec<InventoryItem>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -38,13 +40,22 @@ pub struct InventoryItem {
 pub async fn get_nft_inventory(
     transport_id: i32,
     client: ClientWithMiddleware,
+    tradeable_list: serde_json::Value,
 ) -> anyhow::Result<InventoryResponse> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/inven?transportID={transport_id}&languageCode=en",
         transport_id = transport_id
     );
 
-    let response_json: InventoryResponse = get_response(&client, request_url).await?;
+    let mut response_json: InventoryResponse = get_response(&client, request_url).await?;
+
+    response_json
+        .inventory
+        .iter()
+        .filter(|i| tradeable_list[&i.item_id] == 1)
+        .for_each(|i| {
+            response_json.tradeable_items.push(i.clone());
+        });
 
     Ok(response_json)
 }
