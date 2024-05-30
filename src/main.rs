@@ -32,7 +32,7 @@ mod utils;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
-    dotenvy::dotenv().expect(".env file not found");
+    // dotenvy::dotenv().expect(".env file not found");
 
     let subscriber = tracing_subscriber::fmt().pretty().finish();
     tracing::subscriber::set_global_default(subscriber)
@@ -54,8 +54,8 @@ async fn main() -> anyhow::Result<()> {
 
     let now = Instant::now();
 
-    let data = fs::read_to_string("src/dump_trade_items/list.json").unwrap();
-    // let data = fs::read_to_string("list.json").unwrap();
+    // let data = fs::read_to_string("src/dump_trade_items/list.json").unwrap();
+    let data = fs::read_to_string("list.json").unwrap();
     let traddable_list: serde_json::Value =
         serde_json::from_str(&data).expect("list.json file was not found");
 
