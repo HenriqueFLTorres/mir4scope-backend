@@ -39,3 +39,5 @@ pub struct AppState {
     pub db: Pool<Postgres>,
     pub client: ClientWithMiddleware,
 }
+
+pub fn default_bool() -> bool { false }

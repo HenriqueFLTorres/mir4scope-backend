@@ -2,13 +2,12 @@ use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 
 use crate::utils::get_response;
+use crate::utils::default_bool;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InventoryResponse {
     #[serde(alias = "data")]
     pub inventory: Vec<InventoryItem>,
-    #[serde(skip_deserializing)]
-    pub tradeable_items: Vec<InventoryItem>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -35,12 +34,14 @@ pub struct InventoryItem {
     pub item_name: String,
     #[serde(alias = "itemPath")]
     pub item_path: String,
+    #[serde(default = "default_bool")]
+    pub is_tradable: bool
 }
 
 pub async fn get_nft_inventory(
     transport_id: i32,
     client: ClientWithMiddleware,
-    tradeable_list: serde_json::Value,
+    tradable_list: serde_json::Value,
 ) -> anyhow::Result<InventoryResponse> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/inven?transportID={transport_id}&languageCode=en",
@@ -51,10 +52,10 @@ pub async fn get_nft_inventory(
 
     response_json
         .inventory
-        .iter()
-        .filter(|i| tradeable_list[&i.item_id] == 1)
+        .iter_mut()
+        .filter(|i| tradable_list[&i.item_id] == 1)
         .for_each(|i| {
-            response_json.tradeable_items.push(i.clone());
+            i.is_tradable = true;
         });
 
     Ok(response_json)

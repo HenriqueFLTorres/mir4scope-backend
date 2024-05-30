@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::utils::get_response;
+use crate::utils::default_bool;
 
 use super::{
     inventory::InventoryItem,
@@ -45,6 +46,8 @@ pub struct MysticalPiece {
     pub options: Vec<ItemDetail>,
     #[serde(alias = "addOptions", default)]
     pub add_option: Vec<ItemDetailAdd>,
+    #[serde(default = "default_bool")]
+    pub is_tradable: bool
 }
 
 pub async fn get_nft_mystical_piece(
@@ -52,6 +55,7 @@ pub async fn get_nft_mystical_piece(
     class: i32,
     client: ClientWithMiddleware,
     inventory: Vec<InventoryItem>,
+    tradable_list: serde_json::Value,
 ) -> anyhow::Result<MysticalPieceResponseObject> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/mysticalpiece?transportID={transport_id}&languageCode=en",
@@ -81,6 +85,10 @@ pub async fn get_nft_mystical_piece(
                 piece_value.options = item_detail.options;
                 piece_value.add_option = item_detail.add_option;
                 piece_value.power_score = item_detail.power_score;
+
+                if tradable_list[&piece_value.item_idx] == 1 {
+                    piece_value.is_tradable = true
+                }
             } else {
                 println!("Inventory mystical piece item match not found");
                 piece_value.options = Vec::new();

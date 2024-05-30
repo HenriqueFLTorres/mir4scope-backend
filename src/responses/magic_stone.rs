@@ -4,6 +4,9 @@ use super::{
     inventory::InventoryItem,
     item_detail::{get_item_detail, ItemDetail, ItemDetailAdd},
 };
+
+use crate::utils::default_bool;
+
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -51,6 +54,8 @@ pub struct MagicStone {
     pub options: Vec<ItemDetail>,
     #[serde(alias = "addOptions", default)]
     pub add_option: Vec<ItemDetailAdd>,
+    #[serde(default = "default_bool")]
+    pub is_tradable: bool
 }
 
 pub async fn get_nft_magic_stone(
@@ -58,6 +63,7 @@ pub async fn get_nft_magic_stone(
     class: i32,
     client: ClientWithMiddleware,
     inventory: Vec<InventoryItem>,
+    tradable_list: serde_json::Value,
 ) -> anyhow::Result<MagicStoneResponseObject> {
     let request_url = format!(
         "https://webapi.mir4global.com/nft/character/magicstone?transportID={transport_id}&languageCode=en",
@@ -87,6 +93,10 @@ pub async fn get_nft_magic_stone(
                 stone_value.options = item_detail.options;
                 stone_value.add_option = item_detail.add_option;
                 stone_value.power_score = item_detail.power_score;
+                
+                if tradable_list[&stone_value.item_idx] == 1 {
+                    stone_value.is_tradable = true
+                }
             } else {
                 println!("Inventory magic stone item match not found");
                 stone_value.options = Vec::new();

@@ -15,6 +15,7 @@ pub struct ItemDetailData {
     pub options: Vec<ItemDetail>,
     #[serde(alias = "addOptions", default)]
     pub add_option: Vec<ItemDetailAdd>,
+
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

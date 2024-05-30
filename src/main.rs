@@ -150,7 +150,7 @@ async fn dump_nft(
     nft_data: serde_json::Value,
     pool: Pool<Postgres>,
     client: ClientWithMiddleware,
-    traddable_list: serde_json::Value,
+    tradable_list: serde_json::Value,
 ) -> anyhow::Result<(), JoinError> {
     let mut character: Nft = serde_json::from_value(nft_data.clone()).expect(
         &nft_description_error("Fail to get serde_json value from nft", nft_data.clone()),
@@ -181,13 +181,17 @@ async fn dump_nft(
         return Ok(());
     }
 
-    let nft_inventory = tokio::spawn(get_nft_inventory(character.transport_id, client.clone(), traddable_list.clone()))
-        .await
-        .expect(&nft_description_error(
-            "Fail to get nft inventory",
-            nft_data.clone(),
-        ))
-        .unwrap();
+    let nft_inventory = tokio::spawn(get_nft_inventory(
+        character.transport_id,
+        client.clone(),
+        tradable_list.clone(),
+    ))
+    .await
+    .expect(&nft_description_error(
+        "Fail to get nft inventory",
+        nft_data.clone(),
+    ))
+    .unwrap();
 
     let succession = tokio::spawn(get_nft_succession(
         character.transport_id,
@@ -220,6 +224,7 @@ async fn dump_nft(
         character.class,
         client.clone(),
         nft_inventory.clone().inventory,
+        tradable_list.clone(),
     ))
     .await
     .expect(&nft_description_error(
@@ -232,6 +237,7 @@ async fn dump_nft(
         character.class,
         client.clone(),
         nft_inventory.clone().inventory,
+        tradable_list.clone(),
     ))
     .await
     .expect(&nft_description_error(
@@ -255,7 +261,7 @@ async fn dump_nft(
             character.class,
             client.clone(),
             nft_inventory.clone().inventory,
-            traddable_list.clone()
+            tradable_list.clone()
         )),
         tokio::spawn(get_nft_stats(character.transport_id, client.clone())),
         tokio::spawn(get_nft_skills(
