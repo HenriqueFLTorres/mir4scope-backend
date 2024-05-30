@@ -1,8 +1,8 @@
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 
-use crate::utils::get_response;
 use crate::utils::default_bool;
+use crate::utils::get_response;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InventoryResponse {
@@ -35,7 +35,7 @@ pub struct InventoryItem {
     #[serde(alias = "itemPath")]
     pub item_path: String,
     #[serde(default = "default_bool")]
-    pub is_tradable: bool
+    pub is_tradable: bool,
 }
 
 pub async fn get_nft_inventory(

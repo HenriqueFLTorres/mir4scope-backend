@@ -55,7 +55,7 @@ pub struct MagicStone {
     #[serde(alias = "addOptions", default)]
     pub add_option: Vec<ItemDetailAdd>,
     #[serde(default = "default_bool")]
-    pub is_tradable: bool
+    pub is_tradable: bool,
 }
 
 pub async fn get_nft_magic_stone(
@@ -93,7 +93,7 @@ pub async fn get_nft_magic_stone(
                 stone_value.options = item_detail.options;
                 stone_value.add_option = item_detail.add_option;
                 stone_value.power_score = item_detail.power_score;
-                
+
                 if tradable_list[&stone_value.item_idx] == 1 {
                     stone_value.is_tradable = true
                 }

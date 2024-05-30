@@ -2,8 +2,8 @@ use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::utils::get_response;
 use crate::utils::default_bool;
+use crate::utils::get_response;
 
 use super::{
     inventory::InventoryItem,
@@ -47,7 +47,7 @@ pub struct MysticalPiece {
     #[serde(alias = "addOptions", default)]
     pub add_option: Vec<ItemDetailAdd>,
     #[serde(default = "default_bool")]
-    pub is_tradable: bool
+    pub is_tradable: bool,
 }
 
 pub async fn get_nft_mystical_piece(

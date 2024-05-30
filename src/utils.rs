@@ -40,4 +40,6 @@ pub struct AppState {
     pub client: ClientWithMiddleware,
 }
 
-pub fn default_bool() -> bool { false }
+pub fn default_bool() -> bool {
+    false
+}

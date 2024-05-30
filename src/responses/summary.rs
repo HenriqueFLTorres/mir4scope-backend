@@ -1,7 +1,7 @@
 use crate::{
     responses::item_detail::{get_item_detail, ItemDetail},
-    utils::get_response,
     utils::default_bool,
+    utils::get_response,
 };
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
@@ -57,7 +57,7 @@ pub struct EquipItem {
     #[serde(alias = "addOptions")]
     pub add_option: Vec<ItemDetailAdd>,
     #[serde(default = "default_bool")]
-    pub is_tradable: bool
+    pub is_tradable: bool,
 }
 
 pub async fn get_nft_summary(
@@ -94,7 +94,8 @@ pub async fn get_nft_summary(
                 equip_item["add_option"] = serde_json::to_value(item_detail.add_option).unwrap();
                 equip_item["power_score"] = serde_json::to_value(item_detail.power_score).unwrap();
 
-                let item_id: String = serde_json::from_value(equip_item["itemIdx"].clone()).unwrap();
+                let item_id: String =
+                    serde_json::from_value(equip_item["itemIdx"].clone()).unwrap();
                 if tradable_list[&item_id.to_string()] == 1 {
                     equip_item["is_tradable"] = serde_json::to_value(true).unwrap();
                     println!("encoutronou");
