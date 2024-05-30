@@ -5,7 +5,7 @@ use clap::Parser;
 #[command(version, about, long_about = None)]
 pub struct Cli {
     /// Initial page to collect NFT
-    #[arg(short, long, default_value_t = 0)]
+    #[arg(short, long, default_value_t = 1)]
     pub initial_page: u8,
 
     /// Final page to collect NFT
