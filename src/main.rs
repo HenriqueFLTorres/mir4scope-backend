@@ -32,7 +32,15 @@ mod utils;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
-    // dotenvy::dotenv().expect(".env file not found");
+
+    let cli = Cli::parse();
+
+    let mut data = fs::read_to_string("list.json").unwrap();
+
+    if cli.local {
+        dotenvy::dotenv().expect(".env file not found");
+        data = fs::read_to_string("src/dump_trade_items/list.json").unwrap();
+    }
 
     let subscriber = tracing_subscriber::fmt().pretty().finish();
     tracing::subscriber::set_global_default(subscriber)
@@ -54,8 +62,6 @@ async fn main() -> anyhow::Result<()> {
 
     let now = Instant::now();
 
-    // let data = fs::read_to_string("src/dump_trade_items/list.json").unwrap();
-    let data = fs::read_to_string("list.json").unwrap();
     let traddable_list: serde_json::Value =
         serde_json::from_str(&data).expect("list.json file was not found");
 
@@ -68,8 +74,6 @@ async fn main() -> anyhow::Result<()> {
         "DELETE FROM magic_stone",
         "DELETE FROM mystical_piece",
     ];
-
-    let cli = Cli::parse();
 
     if cli.drop {
         for query in delete_all_queries {
@@ -93,10 +97,7 @@ async fn main() -> anyhow::Result<()> {
 
     while let Some(res) = join_set.join_next().await {
         let out = res?;
-        match out {
-            Err(err) => tracing::error!("Error spawning NFT list: {}", err),
-            Ok(_) => {}
-        }
+        if let Err(err) = out { tracing::error!("Error spawning NFT list: {}", err) }
     }
 
     let elapsed = now.elapsed();
@@ -152,9 +153,7 @@ async fn dump_nft(
     client: ClientWithMiddleware,
     tradable_list: serde_json::Value,
 ) -> anyhow::Result<(), JoinError> {
-    let mut character: Nft = serde_json::from_value(nft_data.clone()).expect(
-        &nft_description_error("Fail to get serde_json value from nft", nft_data.clone()),
-    );
+    let mut character: Nft = serde_json::from_value(nft_data.clone()).unwrap_or_else(|_| { panic!("{}", nft_description_error("Fail to get serde_json value from nft", nft_data.clone())) });
 
     let db_transport_id: (bool,) = sqlx::query_as(
         "
@@ -187,10 +186,10 @@ async fn dump_nft(
         tradable_list.clone(),
     ))
     .await
-    .expect(&nft_description_error(
+    .unwrap_or_else(|_| { panic!("{}", nft_description_error(
         "Fail to get nft inventory",
         nft_data.clone(),
-    ))
+    )) })
     .unwrap();
 
     let succession = tokio::spawn(get_nft_succession(
@@ -200,24 +199,24 @@ async fn dump_nft(
         nft_inventory.clone().inventory,
     ))
     .await
-    .expect(&nft_description_error(
+    .unwrap_or_else(|_| { panic!("{}", nft_description_error(
         "Fail to get nft succession",
         nft_data.clone(),
-    ))
+    )) })
     .unwrap();
     let spirits = tokio::spawn(get_nft_spirits(character.transport_id, client.clone()))
         .await
-        .expect(&nft_description_error(
+        .unwrap_or_else(|_| { panic!("{}", nft_description_error(
             "Fail to get nft spirits",
             nft_data.clone(),
-        ))
+        )) })
         .unwrap();
     let magic_orb = tokio::spawn(get_nft_magic_orb(character.transport_id, client.clone()))
         .await
-        .expect(&nft_description_error(
+        .unwrap_or_else(|_| { panic!("{}", nft_description_error(
             "Fail to get nft magic_orb",
             nft_data.clone(),
-        ))
+        )) })
         .unwrap();
     let magic_stone = tokio::spawn(get_nft_magic_stone(
         character.transport_id,
@@ -227,10 +226,10 @@ async fn dump_nft(
         tradable_list.clone(),
     ))
     .await
-    .expect(&nft_description_error(
+    .unwrap_or_else(|_| { panic!("{}", nft_description_error(
         "Fail to get nft magic_stone",
         nft_data.clone(),
-    ))
+    )) })
     .unwrap();
     let mystical_piece = tokio::spawn(get_nft_mystical_piece(
         character.transport_id,
@@ -240,18 +239,18 @@ async fn dump_nft(
         tradable_list.clone(),
     ))
     .await
-    .expect(&nft_description_error(
+    .unwrap_or_else(|_| { panic!("{}", nft_description_error(
         "Fail to get nft mystical_piece",
         nft_data.clone(),
-    ))
+    )) })
     .unwrap();
 
     character.tickets = tokio::spawn(get_nft_tickets(nft_inventory.clone().inventory))
         .await
-        .expect(&nft_description_error(
+        .unwrap_or_else(|_| { panic!("{}", nft_description_error(
             "Fail to get nft tickets",
             nft_data.clone(),
-        ))
+        )) })
         .unwrap();
 
     let (summary, stats, skills, training, buildings, assets, potentials, holy_stuff, codex) = tokio::join!(
@@ -339,10 +338,10 @@ async fn dump_nft(
 
     db::add_nft(&pool.clone().clone(), &character)
         .await
-        .expect(&nft_description_error(
+        .unwrap_or_else(|_| { panic!("{}", nft_description_error(
             "Fail to add nft to database",
             nft_data.clone(),
-        ));
+        )) });
 
     Ok(())
 }

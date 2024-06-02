@@ -98,8 +98,6 @@ pub async fn get_nft_summary(
                     serde_json::from_value(equip_item["itemIdx"].clone()).unwrap();
                 if tradable_list[&item_id.to_string()] == 1 {
                     equip_item["is_tradable"] = serde_json::to_value(true).unwrap();
-                    println!("encoutronou");
-                    println!("{:#?}", equip_item["is_tradable"])
                 }
             });
         let equip_object: EquipItem =

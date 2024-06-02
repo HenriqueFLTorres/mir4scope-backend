@@ -36,7 +36,7 @@ pub async fn get_nft_buildings(
 
             (
                 building_object.1.building_name.clone(),
-                value_as_number.clone(),
+                value_as_number,
             )
         })
         .collect();

@@ -60,7 +60,7 @@ pub async fn get_item_detail(
         item_uid = item_uid
     );
 
-    let response_json: ItemDetailResponse = get_response(&client, request_url).await?;
+    let response_json: ItemDetailResponse = get_response(client, request_url).await?;
 
     Ok(response_json.data)
 }

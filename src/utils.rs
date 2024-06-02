@@ -29,10 +29,10 @@ where
 }
 
 pub fn nft_description_error(message: &str, nft_data: serde_json::Value) -> std::string::String {
-    return format!(
+    format!(
         "\n {}: \n transport_id: {}, seq: {}, character_name: {} \n",
         message, nft_data["transport_id"], nft_data["seq"], nft_data["character_name"]
-    );
+    )
 }
 
 pub struct AppState {
