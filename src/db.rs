@@ -66,15 +66,17 @@ pub async fn add_inventory(
     inventory_response: &InventoryResponse,
 ) -> Result<i64, sqlx::Error> {
     let query = r#"
-      INSERT INTO inventory (inventory)
-      VALUES ($1)
+      INSERT INTO inventory (inventory, craft_materials)
+      VALUES ($1, $2)
       RETURNING id
     "#;
 
     let json_items = serde_json::json!(&inventory_response.inventory);
+    let json_craft_materials = serde_json::json!(&inventory_response.craft_materials);
 
     let id: (i64,) = sqlx::query_as(query)
         .bind(json_items)
+        .bind(json_craft_materials)
         .fetch_one(pool)
         .await
         .unwrap();
