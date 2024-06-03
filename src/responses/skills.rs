@@ -41,7 +41,7 @@ pub async fn get_nft_skills(
         .map(|skill_object| {
             let value_as_number = skill_object.skill_level.parse::<i32>().unwrap();
 
-            (skill_object.skill_name.clone(), value_as_number.clone())
+            (skill_object.skill_name.clone(), value_as_number)
         })
         .collect();
 

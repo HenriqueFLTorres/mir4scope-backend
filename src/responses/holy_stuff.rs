@@ -47,7 +47,7 @@ pub async fn get_nft_holy_stuff(
 
             (
                 holy_stuff_object.1.holy_stuff_name.clone(),
-                value_as_number.clone(),
+                value_as_number,
             )
         })
         .collect();

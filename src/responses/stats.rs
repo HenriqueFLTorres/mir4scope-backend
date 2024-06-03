@@ -45,7 +45,7 @@ pub async fn get_nft_stats(
             let parsed_value = re.replace_all(stats_object.stat_value.as_str(), "");
             let value_as_number = parsed_value.into_owned().parse::<f32>().unwrap();
 
-            (stats_object.stat_name.clone(), value_as_number.clone())
+            (stats_object.stat_name.clone(), value_as_number)
         })
         .collect();
 

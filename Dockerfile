@@ -24,4 +24,4 @@ COPY --from=builder /usr/src/app/mir4scope-backend /app/mir4scope-backend
 COPY src/dump_trade_items/list.json .
 
 # Set the binary as the default command to run
-CMD ./mir4scope-backend
+CMD ./mir4scope-backend -i 1 -f 5
