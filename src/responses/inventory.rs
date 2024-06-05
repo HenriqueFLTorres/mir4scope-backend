@@ -62,6 +62,7 @@ pub async fn get_nft_inventory(
                 i.is_tradable = true;
             }
 
+// subtypes codes of items that are crafting materials
             let valid_sub_types = [3,4,5,6,7];
 
             if i.main_type == 9 && valid_sub_types.contains(&i.sub_type) {
