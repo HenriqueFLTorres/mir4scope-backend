@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use reqwest_middleware::ClientWithMiddleware;
 use serde::de::DeserializeOwned;
 use sqlx::{Pool, Postgres};
@@ -42,4 +43,8 @@ pub struct AppState {
 
 pub fn default_bool() -> bool {
     false
+}
+
+pub fn default_hashmap() -> HashMap<String, i32> {
+    HashMap::new()
 }

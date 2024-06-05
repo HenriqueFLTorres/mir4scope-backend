@@ -1,13 +1,17 @@
+use std::collections::HashMap;
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 
 use crate::utils::default_bool;
+use crate::utils::default_hashmap;
 use crate::utils::get_response;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InventoryResponse {
     #[serde(alias = "data")]
     pub inventory: Vec<InventoryItem>,
+    #[serde(default = "default_hashmap")]
+    pub craft_materials: HashMap<String, i32>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -49,13 +53,21 @@ pub async fn get_nft_inventory(
     );
 
     let mut response_json: InventoryResponse = get_response(&client, request_url).await?;
-
+    
     response_json
         .inventory
         .iter_mut()
-        .filter(|i| tradable_list[&i.item_id] == 1)
         .for_each(|i| {
-            i.is_tradable = true;
+            if tradable_list[&i.item_id] == 1 {
+                i.is_tradable = true;
+            }
+
+// subtypes codes of items that are crafting materials
+            let valid_sub_types = [3,4,5,6,7];
+
+            if i.main_type == 9 && valid_sub_types.contains(&i.sub_type) {
+                response_json.craft_materials.insert(i.item_name.clone(), i.stack);
+            }
         });
 
     Ok(response_json)
