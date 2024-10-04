@@ -2,7 +2,7 @@ use serde_json::{json, Value};
 use std::{collections::HashMap, fs};
 
 fn main() -> serde_json::Result<()> {
-    let data = fs::read_to_string("src/dump_trade_items/ITEM.json").unwrap();
+    let data = fs::read_to_string("/ITEM.json").unwrap();
     let serde_value: Value = serde_json::from_str(&data).expect("ITEM.json file was not found");
 
     let mut new_data = HashMap::new();
@@ -14,8 +14,8 @@ fn main() -> serde_json::Result<()> {
 
     let new_json = json!(new_data);
     fs::write(
-        "src/dump_trade_items/list.json",
-        serde_json::to_string_pretty(&new_json).unwrap(),
+        "./list.json",
+        serde_json::to_string_pretty(&new_json)?,
     )
     .unwrap();
 

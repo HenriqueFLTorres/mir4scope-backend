@@ -2,11 +2,17 @@
 🚀 **blazingly fast** 🚀 🦀 backend for https://www.mir4scope.com
 
 ## .env
-`DATABASE_URL`: **Postgres** database url
+`DATABASE_URL`: **postgres** database url
  - `postgres://<username>:<password>@<netloc>:<port>/mir4scope` 
 
 ## How to run
 ```bash
+# needed to get tradable items
+cargo run --package dump_trade_items
+# instead of running the command above you can copy the file 
+# `dump_trade_items/list.json` to the root of the project
+
+# Then finally run!!!
 cargo run --release # go birrrrr
 # or with arguments:
 cargo run --release -- -d -l -i 1 -f 5
