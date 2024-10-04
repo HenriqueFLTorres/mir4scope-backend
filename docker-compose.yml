@@ -7,4 +7,4 @@ services:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
     ports:
-      - "6969:5432"
+      - "5432:5432"

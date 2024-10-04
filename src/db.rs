@@ -1,6 +1,5 @@
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::env;
-
 use crate::responses::magic_orb::MagicOrbResponse;
 use crate::responses::magic_stone::MagicStoneResponseObject;
 use crate::responses::mystical_piece::MysticalPieceResponseObject;
@@ -55,8 +54,7 @@ pub async fn add_nft(pool: &Pool<Postgres>, character: &Nft) -> Result<(), sqlx:
         .bind(character.magic_stone_id)
         .bind(character.mystical_piece_id)
         .execute(pool)
-        .await
-        .unwrap();
+        .await?;
 
     Ok(())
 }
@@ -78,8 +76,7 @@ pub async fn add_inventory(
         .bind(json_items)
         .bind(json_craft_materials)
         .fetch_one(pool)
-        .await
-        .unwrap();
+        .await?;
 
     Ok(id.0)
 }
@@ -99,8 +96,7 @@ pub async fn add_succession(
     let id: (i64,) = sqlx::query_as(query)
         .bind(json_items)
         .fetch_one(&pool)
-        .await
-        .unwrap();
+        .await?;
 
     Ok(id.0)
 }
@@ -122,8 +118,7 @@ pub async fn add_spirits(
         .bind(equip)
         .bind(inven)
         .fetch_one(&pool)
-        .await
-        .unwrap();
+        .await?;
 
     Ok(id.0)
 }
@@ -144,8 +139,7 @@ pub async fn add_magic_orb(
         .bind(equip_item)
         .bind(magic_orb_response.data.active_deck)
         .fetch_one(&pool)
-        .await
-        .unwrap();
+        .await?;
 
     Ok(id.0)
 }
@@ -165,8 +159,7 @@ pub async fn add_magic_stone(
         .bind(equip_item)
         .bind(magic_stone_response.active_deck)
         .fetch_one(&pool)
-        .await
-        .unwrap();
+        .await?;
 
     Ok(id.0)
 }
@@ -187,8 +180,7 @@ pub async fn add_mystical_piece(
         .bind(equip_item)
         .bind(mystical_piece_response.active_deck)
         .fetch_one(&pool)
-        .await
-        .unwrap();
+        .await?;
 
     Ok(id.0)
 }

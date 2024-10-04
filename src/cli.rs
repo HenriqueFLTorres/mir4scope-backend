@@ -14,7 +14,7 @@ pub struct Cli {
 
     /// If the backend should drop the database or not. [Default: false]
     #[arg(short, long, default_value_t = false)]
-    pub drop: bool,
+    pub db_drop: bool,
 
     /// Local Development [default: false]
     #[arg(short, long, default_value_t = false)]

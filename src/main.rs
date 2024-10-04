@@ -35,22 +35,19 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    let mut data = fs::read_to_string("list.json").unwrap();
+    let mut data = fs::read_to_string("list.json")?;
 
     if cli.local {
         dotenvy::dotenv().expect(".env file not found");
-        data = fs::read_to_string("src/dump_trade_items/list.json").unwrap();
+        data = fs::read_to_string("../dump_trade_items/list.json")?;
     }
 
-    let subscriber = tracing_subscriber::fmt().pretty().finish();
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Can't set default tracing subscriber");
+    tracing_subscriber::fmt().init();
 
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(1);
     let basic_client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
-        .build()
-        .unwrap();
+        .build()?;
 
     let bindings = Arc::new(Mutex::new(AppState {
         db: db::create_pool().await?,
@@ -75,12 +72,11 @@ async fn main() -> anyhow::Result<()> {
         "DELETE FROM mystical_piece",
     ];
 
-    if cli.drop {
+    if cli.db_drop {
         for query in delete_all_queries {
             sqlx::query(query)
                 .execute(&app_state.db.to_owned())
-                .await
-                .unwrap();
+                .await?;
         }
     }
 
@@ -139,8 +135,7 @@ async fn retrieve_and_save_nft(
         .collect();
 
     for task in tasks {
-        task.await
-            .unwrap()
+        task.await?
             .unwrap_or_else(|error| tracing::error!("Error dumping nft: {:#?}", error));
     }
 
@@ -318,7 +313,7 @@ async fn dump_nft(
         }
     }
 
-    println!(
+    tracing::info!(
         "Dumping character with the name of {:#?}...",
         character.character_name
     );
@@ -338,7 +333,7 @@ async fn dump_nft(
 
     db::add_nft(&pool.clone().clone(), &character)
         .await
-        .unwrap_or_else(|_| { panic!("{}", nft_description_error(
+        .unwrap_or_else(|_| { tracing::error!("{}", nft_description_error(
             "Fail to add nft to database",
             nft_data.clone(),
         )) });
